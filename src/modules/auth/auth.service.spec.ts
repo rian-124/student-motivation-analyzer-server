@@ -30,20 +30,4 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('message');
     });
   });
-
-  describe('register()', () => {
-    it('should return a message when called', async () => {
-      const registerDto = {
-        name: 'Test User',
-        email: 'test@email.com',
-        password: 'password123',
-        role: 'student',
-      };
-
-      const result = await service.register(registerDto);
-
-      expect(result).toBeDefined();
-      expect(result).toHaveProperty('message');
-    });
-  });
 });

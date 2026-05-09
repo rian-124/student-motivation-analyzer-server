@@ -8,7 +8,14 @@ import {
   Body,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { LecturersService } from './lecturers.service';
 import { CreateLecturerDto } from './dto/create-lecturer.dto';
 import { UpdateLecturerDto } from './dto/update-lecturer.dto';
@@ -28,9 +35,22 @@ export class LecturersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Ambil semua dosen', description: 'Mendukung pagination dengan query page & limit' })
-  @ApiQuery({ name: 'page', required: false, example: 1, description: 'Halaman ke berapa' })
-  @ApiQuery({ name: 'limit', required: false, example: 10, description: 'Jumlah data per halaman' })
+  @ApiOperation({
+    summary: 'Ambil semua dosen',
+    description: 'Mendukung pagination dengan query page & limit',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    example: 1,
+    description: 'Halaman ke berapa',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    example: 10,
+    description: 'Jumlah data per halaman',
+  })
   @ApiResponse({ status: 200, description: 'Daftar dosen berhasil diambil' })
   findAll(@Query('page') page?: number, @Query('limit') limit?: number) {
     return this.lecturersService.findAll(page, limit);
@@ -50,7 +70,10 @@ export class LecturersController {
   @ApiParam({ name: 'id', description: 'ID dosen', example: 'uuid-dosen' })
   @ApiResponse({ status: 200, description: 'Data dosen berhasil diupdate' })
   @ApiResponse({ status: 404, description: 'Dosen tidak ditemukan' })
-  update(@Param('id') id: string, @Body() updateLecturerDto: UpdateLecturerDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateLecturerDto: UpdateLecturerDto,
+  ) {
     return this.lecturersService.update(id, updateLecturerDto);
   }
 

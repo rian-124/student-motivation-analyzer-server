@@ -8,7 +8,14 @@ import {
   Body,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -28,9 +35,22 @@ export class UsersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Ambil semua user', description: 'Mendukung pagination dengan query page & limit' })
-  @ApiQuery({ name: 'page', required: false, example: 1, description: 'Halaman ke berapa' })
-  @ApiQuery({ name: 'limit', required: false, example: 10, description: 'Jumlah data per halaman' })
+  @ApiOperation({
+    summary: 'Ambil semua user',
+    description: 'Mendukung pagination dengan query page & limit',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    example: 1,
+    description: 'Halaman ke berapa',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    example: 10,
+    description: 'Jumlah data per halaman',
+  })
   @ApiResponse({ status: 200, description: 'Daftar user berhasil diambil' })
   findAll(@Query('page') page?: number, @Query('limit') limit?: number) {
     return this.usersService.findAll(page, limit);

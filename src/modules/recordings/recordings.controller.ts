@@ -31,25 +31,47 @@ export class RecordingsController {
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: 'Upload file rekaman', description: 'Upload file audio/video rekaman mahasiswa (multipart/form-data)' })
+  @ApiOperation({
+    summary: 'Upload file rekaman',
+    description:
+      'Upload file audio/video rekaman mahasiswa (multipart/form-data)',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     description: 'File rekaman + informasi tambahan',
     schema: {
       type: 'object',
       properties: {
-        file: { type: 'string', format: 'binary', description: 'File audio/video rekaman' },
-        studentId: { type: 'string', example: 'uuid-mahasiswa', description: 'ID mahasiswa' },
-        subject: { type: 'string', example: 'Pemrograman Web', description: 'Nama mata kuliah' },
-        description: { type: 'string', example: 'Sesi bimbingan semester 5', description: 'Deskripsi rekaman' },
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'File audio/video rekaman',
+        },
+        studentId: {
+          type: 'string',
+          example: 'uuid-mahasiswa',
+          description: 'ID mahasiswa',
+        },
+        subject: {
+          type: 'string',
+          example: 'Pemrograman Web',
+          description: 'Nama mata kuliah',
+        },
+        description: {
+          type: 'string',
+          example: 'Sesi bimbingan semester 5',
+          description: 'Deskripsi rekaman',
+        },
       },
       required: ['file', 'studentId', 'subject'],
     },
   })
   @ApiResponse({ status: 201, description: 'Rekaman berhasil diupload' })
-  @ApiResponse({ status: 400, description: 'File tidak valid atau data tidak lengkap' })
+  @ApiResponse({
+    status: 400,
+    description: 'File tidak valid atau data tidak lengkap',
+  })
   upload(
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     @UploadedFile() file: any,
     @Body() createRecordingDto: CreateRecordingDto,
   ) {
@@ -57,9 +79,22 @@ export class RecordingsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Ambil semua rekaman', description: 'Mendukung pagination dengan query page & limit' })
-  @ApiQuery({ name: 'page', required: false, example: 1, description: 'Halaman ke berapa' })
-  @ApiQuery({ name: 'limit', required: false, example: 10, description: 'Jumlah data per halaman' })
+  @ApiOperation({
+    summary: 'Ambil semua rekaman',
+    description: 'Mendukung pagination dengan query page & limit',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    example: 1,
+    description: 'Halaman ke berapa',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    example: 10,
+    description: 'Jumlah data per halaman',
+  })
   @ApiResponse({ status: 200, description: 'Daftar rekaman berhasil diambil' })
   findAll(@Query('page') page?: number, @Query('limit') limit?: number) {
     return this.recordingsService.findAll(page, limit);

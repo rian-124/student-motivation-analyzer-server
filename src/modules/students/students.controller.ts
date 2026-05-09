@@ -8,7 +8,14 @@ import {
   Body,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
@@ -28,17 +35,37 @@ export class StudentsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Ambil semua mahasiswa', description: 'Mendukung pagination dengan query page & limit' })
-  @ApiQuery({ name: 'page', required: false, example: 1, description: 'Halaman ke berapa' })
-  @ApiQuery({ name: 'limit', required: false, example: 10, description: 'Jumlah data per halaman' })
-  @ApiResponse({ status: 200, description: 'Daftar mahasiswa berhasil diambil' })
+  @ApiOperation({
+    summary: 'Ambil semua mahasiswa',
+    description: 'Mendukung pagination dengan query page & limit',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    example: 1,
+    description: 'Halaman ke berapa',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    example: 10,
+    description: 'Jumlah data per halaman',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Daftar mahasiswa berhasil diambil',
+  })
   findAll(@Query('page') page?: number, @Query('limit') limit?: number) {
     return this.studentsService.findAll(page, limit);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Ambil mahasiswa berdasarkan ID' })
-  @ApiParam({ name: 'id', description: 'ID mahasiswa', example: 'uuid-mahasiswa' })
+  @ApiParam({
+    name: 'id',
+    description: 'ID mahasiswa',
+    example: 'uuid-mahasiswa',
+  })
   @ApiResponse({ status: 200, description: 'Mahasiswa ditemukan' })
   @ApiResponse({ status: 404, description: 'Mahasiswa tidak ditemukan' })
   findOne(@Param('id') id: string) {
@@ -47,7 +74,11 @@ export class StudentsController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update data mahasiswa' })
-  @ApiParam({ name: 'id', description: 'ID mahasiswa', example: 'uuid-mahasiswa' })
+  @ApiParam({
+    name: 'id',
+    description: 'ID mahasiswa',
+    example: 'uuid-mahasiswa',
+  })
   @ApiResponse({ status: 200, description: 'Data mahasiswa berhasil diupdate' })
   @ApiResponse({ status: 404, description: 'Mahasiswa tidak ditemukan' })
   update(@Param('id') id: string, @Body() updateStudentDto: UpdateStudentDto) {
@@ -56,7 +87,11 @@ export class StudentsController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Hapus mahasiswa' })
-  @ApiParam({ name: 'id', description: 'ID mahasiswa', example: 'uuid-mahasiswa' })
+  @ApiParam({
+    name: 'id',
+    description: 'ID mahasiswa',
+    example: 'uuid-mahasiswa',
+  })
   @ApiResponse({ status: 200, description: 'Mahasiswa berhasil dihapus' })
   @ApiResponse({ status: 404, description: 'Mahasiswa tidak ditemukan' })
   remove(@Param('id') id: string) {

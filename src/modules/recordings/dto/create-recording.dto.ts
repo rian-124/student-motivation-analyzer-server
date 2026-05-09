@@ -2,7 +2,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
 
 export class CreateRecordingDto {
-  @ApiProperty({ example: 'uuid-mahasiswa', description: 'ID mahasiswa pemilik rekaman' })
+  @ApiProperty({
+    example: 'uuid-mahasiswa',
+    description: 'ID mahasiswa pemilik rekaman',
+  })
   @IsString()
   @IsNotEmpty()
   studentId: string;
@@ -12,7 +15,10 @@ export class CreateRecordingDto {
   @IsNotEmpty()
   subject: string;
 
-  @ApiPropertyOptional({ example: 'Rekaman sesi bimbingan semester 5', description: 'Deskripsi rekaman' })
+  @ApiPropertyOptional({
+    example: 'Rekaman sesi bimbingan semester 5',
+    description: 'Deskripsi rekaman',
+  })
   @IsString()
   @IsOptional()
   description?: string;

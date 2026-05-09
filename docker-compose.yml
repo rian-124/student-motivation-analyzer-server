@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: student-motivation-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: student_motivation_analyzer
+    ports:
+      # Menggunakan port 5436 di host agar tidak bentrok dengan 5434 & 5435 yang sudah ada
+      - "5436:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d student_motivation_analyzer"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: student-motivation-api
+    ports:
+      - "3000:3000"
+    environment:
+      # Koneksi database menunjuk ke service 'db' (host docker-compose) bukan localhost
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/student_motivation_analyzer?schema=public
+      - NODE_ENV=production
+      - PORT=3000
+      - API_PREFIX=api
+      - CORS_ORIGIN=*
+      - JWT_SECRET=super-secret-production-key-123
+      - JWT_EXPIRES_IN=1d
+      - JWT_REFRESH_EXPIRES_IN=7d
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

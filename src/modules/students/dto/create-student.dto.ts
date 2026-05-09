@@ -2,12 +2,18 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
 
 export class CreateStudentDto {
-  @ApiProperty({ example: '2021001', description: 'Nomor Induk Mahasiswa (NIM)' })
+  @ApiProperty({
+    example: '2021001',
+    description: 'Nomor Induk Mahasiswa (NIM)',
+  })
   @IsString()
   @IsNotEmpty()
   nim: string;
 
-  @ApiProperty({ example: 'Budi Santoso', description: 'Nama lengkap mahasiswa' })
+  @ApiProperty({
+    example: 'Budi Santoso',
+    description: 'Nama lengkap mahasiswa',
+  })
   @IsString()
   @IsNotEmpty()
   name: string;
@@ -17,7 +23,10 @@ export class CreateStudentDto {
   @IsOptional()
   class?: string;
 
-  @ApiPropertyOptional({ example: '5', description: 'Semester aktif mahasiswa' })
+  @ApiPropertyOptional({
+    example: '5',
+    description: 'Semester aktif mahasiswa',
+  })
   @IsString()
   @IsOptional()
   semester?: string;
