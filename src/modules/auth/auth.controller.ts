@@ -39,7 +39,7 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-  @ApiBearerAuth()
+  @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK)
@@ -52,7 +52,7 @@ export class AuthController {
     return this.authService.logout(user.id);
   }
 
-  @ApiBearerAuth()
+  @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)

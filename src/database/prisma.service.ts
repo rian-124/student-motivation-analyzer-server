@@ -48,6 +48,7 @@ export class PrismaService
     // Hapus semua data dalam urutan yang benar (ikuti foreign key)
     await this.student.deleteMany();
     await this.lecturer.deleteMany();
+    await this.class.deleteMany();
     await this.user.deleteMany();
   }
 }

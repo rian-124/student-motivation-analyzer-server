@@ -7,6 +7,8 @@ import {
   Param,
   Body,
   Query,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,81 +21,77 @@ import {
 import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Role, User } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 
 @ApiTags('Students')
 @ApiBearerAuth('JWT-auth')
 @Controller('students')
+@UseGuards(JwtAuthGuard)
 export class StudentsController {
-  constructor(private readonly studentsService: StudentsService) {}
+  constructor(
+    private readonly studentsService: StudentsService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Tambah mahasiswa baru' })
   @ApiResponse({ status: 201, description: 'Mahasiswa berhasil ditambahkan' })
-  @ApiResponse({ status: 400, description: 'Data tidak valid' })
-  create(@Body() createStudentDto: CreateStudentDto) {
+  create(@Body() createStudentDto: CreateStudentDto, @Request() req: any) {
+    const user = req.user;
+    
+    // Jika yang menambah adalah dosen, otomatis set lecturerId ke dirinya sendiri
+    if (user.role === Role.lecturer) {
+      return this.prisma.lecturer.findUnique({
+        where: { userId: user.id }
+      }).then(lecturer => {
+        if (lecturer) {
+          createStudentDto.lecturerId = lecturer.id;
+        }
+        return this.studentsService.create(createStudentDto);
+      });
+    }
+
     return this.studentsService.create(createStudentDto);
   }
 
   @Get()
-  @ApiOperation({
-    summary: 'Ambil semua mahasiswa',
-    description: 'Mendukung pagination dengan query page & limit',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    example: 1,
-    description: 'Halaman ke berapa',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    example: 10,
-    description: 'Jumlah data per halaman',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Daftar mahasiswa berhasil diambil',
-  })
-  findAll(@Query('page') page?: number, @Query('limit') limit?: number) {
+  @ApiOperation({ summary: 'Ambil semua mahasiswa' })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 10 })
+  async findAll(
+    @Query('page') page?: number, 
+    @Query('limit') limit?: number,
+    @Request() req?: any
+  ) {
+    const user = req.user;
+    
+    // Jika dosen, hanya ambil mahasiswa perwaliannya
+    if (user.role === Role.lecturer) {
+      const lecturer = await this.prisma.lecturer.findUnique({
+        where: { userId: user.id }
+      });
+      return this.studentsService.findAll(page, limit, lecturer?.id);
+    }
+
     return this.studentsService.findAll(page, limit);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Ambil mahasiswa berdasarkan ID' })
-  @ApiParam({
-    name: 'id',
-    description: 'ID mahasiswa',
-    example: 'uuid-mahasiswa',
-  })
-  @ApiResponse({ status: 200, description: 'Mahasiswa ditemukan' })
-  @ApiResponse({ status: 404, description: 'Mahasiswa tidak ditemukan' })
   findOne(@Param('id') id: string) {
     return this.studentsService.findOne(id);
   }
 
   @Put(':id')
   @ApiOperation({ summary: 'Update data mahasiswa' })
-  @ApiParam({
-    name: 'id',
-    description: 'ID mahasiswa',
-    example: 'uuid-mahasiswa',
-  })
-  @ApiResponse({ status: 200, description: 'Data mahasiswa berhasil diupdate' })
-  @ApiResponse({ status: 404, description: 'Mahasiswa tidak ditemukan' })
   update(@Param('id') id: string, @Body() updateStudentDto: UpdateStudentDto) {
     return this.studentsService.update(id, updateStudentDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Hapus mahasiswa' })
-  @ApiParam({
-    name: 'id',
-    description: 'ID mahasiswa',
-    example: 'uuid-mahasiswa',
-  })
-  @ApiResponse({ status: 200, description: 'Mahasiswa berhasil dihapus' })
-  @ApiResponse({ status: 404, description: 'Mahasiswa tidak ditemukan' })
   remove(@Param('id') id: string) {
     return this.studentsService.remove(id);
   }

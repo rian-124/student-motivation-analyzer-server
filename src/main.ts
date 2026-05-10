@@ -36,7 +36,7 @@ async function bootstrap() {
   // CORS
   const corsOrigin = configService.get<string>(
     'app.corsOrigin',
-    'http://localhost:5173',
+    'http://localhost:3000',
   );
   app.enableCors({
     origin: corsOrigin,
@@ -49,10 +49,9 @@ async function bootstrap() {
     .setTitle('Student Motivation Analyzer API')
     .setDescription(
       'Dokumentasi API untuk sistem analisis motivasi mahasiswa berbasis AI.\n\n' +
-        '**Cara Penggunaan:**\n' +
-        '1. Lakukan **POST /api/auth/login** untuk mendapatkan token JWT\n' +
-        '2. Klik tombol **Authorize** di kanan atas, masukkan token\n' +
-        '3. Semua endpoint yang membutuhkan auth akan otomatis terautentikasi',
+        '**Fitur Otomatisasi:**\n' +
+        '- Token akan disimpan otomatis meskipun halaman di-refresh.\n' +
+        '- Cukup login sekali, dan semua endpoint akan langsung bisa diakses.',
     )
     .setVersion('1.0')
     .addBearerAuth(
@@ -64,29 +63,23 @@ async function bootstrap() {
         description: 'Masukkan JWT token',
         in: 'header',
       },
-      'JWT-auth', // nama referensi security scheme
+      'JWT-auth',
     )
-    .addTag('Auth', 'Autentikasi pengguna (login & register)')
-    .addTag('Users', 'Manajemen akun pengguna')
-    .addTag('Students', 'Manajemen data mahasiswa')
-    .addTag('Lecturers', 'Manajemen data dosen')
-    .addTag('Recordings', 'Upload dan manajemen rekaman')
-    .addTag('Motivation Analysis', 'Analisis motivasi mahasiswa berbasis AI')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
+  
   SwaggerModule.setup('docs', app, document, {
     swaggerOptions: {
-      persistAuthorization: true, // token tidak hilang saat refresh
-      tagsSorter: 'alpha',
-      operationsSorter: 'alpha',
+      persistAuthorization: true, // Token tetap ada setelah refresh
+      displayRequestDuration: true,
+      filter: true,
     },
     customSiteTitle: 'Student Motivation Analyzer — API Docs',
   });
   // ─────────────────────────────────────────────────────────────────────────
 
-  // Start Server
-  const port = configService.get<number>('app.port', 3000);
+  const port = configService.get<number>('app.port', 3001);
   await app.listen(port);
   logger.log(`🚀 Server berjalan di: http://localhost:${port}/${apiPrefix}`);
   logger.log(`📄 Swagger Docs: http://localhost:${port}/docs`);
