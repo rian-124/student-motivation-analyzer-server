@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards, HttpStatus } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -8,6 +8,7 @@ import {
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../../common/guards';
 import { CurrentUser } from '../../common/decorators';
+import { WebResponse } from '../../common/dto/web-response.dto';
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
@@ -19,10 +20,13 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Ambil profil user yang sedang login' })
   @ApiResponse({ status: 200, description: 'Profil berhasil diambil' })
-  async getMe(@CurrentUser() user: { id: string }) {
+  async getMe(@CurrentUser() user: { id: string }): Promise<WebResponse<any>> {
     const userData = await this.usersService.findOne(user.id);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id, refreshToken, ...result } = userData;
-    return result;
+    const { id: _id, refreshToken: _refreshToken, ...result } = userData;
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Get profile success',
+      data: result,
+    };
   }
 }

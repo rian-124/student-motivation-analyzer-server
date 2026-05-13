@@ -6,29 +6,24 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-
-export interface ResponseFormat<T> {
-  statusCode: number;
-  message: string;
-  data: T;
-}
+import { WebResponse } from '../dto/web-response.dto';
 
 @Injectable()
-export class TransformInterceptor<T> implements NestInterceptor<
-  T,
-  ResponseFormat<T>
-> {
+export class TransformInterceptor<T>
+  implements NestInterceptor<T, WebResponse<T>>
+{
   intercept(
     context: ExecutionContext,
     next: CallHandler,
-  ): Observable<ResponseFormat<T>> {
-    const statusCode = context.switchToHttp().getResponse().statusCode;
+  ): Observable<WebResponse<T>> {
+    const response = context.switchToHttp().getResponse();
+    const statusCode = response.statusCode;
 
     return next.handle().pipe(
       map((data) => ({
         statusCode,
-        message: 'Success',
-        data,
+        message: data?.message || 'Success',
+        data: data?.data !== undefined ? data.data : data,
       })),
     );
   }

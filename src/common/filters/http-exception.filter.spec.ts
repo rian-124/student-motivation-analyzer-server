@@ -34,12 +34,21 @@ describe('AllExceptionsFilter', () => {
       url: '/api/students',
     };
 
+    const mockHttpArgumentsHost = {
+      getResponse: jest.fn().mockReturnValue(mockResponse),
+      getRequest: jest.fn().mockReturnValue(mockRequest),
+      getNext: jest.fn(),
+    };
+
     mockHost = {
-      switchToHttp: jest.fn().mockReturnValue({
-        getResponse: jest.fn().mockReturnValue(mockResponse),
-        getRequest: jest.fn().mockReturnValue(mockRequest),
-      }),
-    } as any;
+      switchToHttp: jest.fn().mockReturnValue(mockHttpArgumentsHost),
+      switchToRpc: jest.fn(),
+      switchToWs: jest.fn(),
+      getArgs: jest.fn(),
+      getArgByIndex: jest.fn(),
+      getType: jest.fn(),
+    } satisfies ArgumentsHost;
+  });
   });
 
   it('should be defined', () => {

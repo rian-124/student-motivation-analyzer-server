@@ -18,6 +18,7 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard, JwtRefreshGuard } from '../../common/guards';
 import { CurrentUser } from '../../common/decorators';
 import { Request } from 'express';
+import { WebResponse } from '../../common/dto/web-response.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -35,8 +36,13 @@ export class AuthController {
     description: 'Login berhasil, tokens dikembalikan',
   })
   @ApiResponse({ status: 401, description: 'Email atau password salah' })
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto): Promise<WebResponse<any>> {
+    const result = await this.authService.login(loginDto);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Login success',
+      data: result,
+    };
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -48,8 +54,13 @@ export class AuthController {
     description: 'Menghapus refresh token pengguna',
   })
   @ApiResponse({ status: 200, description: 'Logout berhasil' })
-  async logout(@CurrentUser() user: { id: string }) {
-    return this.authService.logout(user.id);
+  async logout(@CurrentUser() user: { id: string }): Promise<WebResponse<null>> {
+    await this.authService.logout(user.id);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Logout success',
+      data: null,
+    };
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -61,8 +72,16 @@ export class AuthController {
     description: 'Mendapatkan token baru menggunakan refresh token',
   })
   @ApiResponse({ status: 200, description: 'Token berhasil diperbarui' })
-  async refreshTokens(@Req() req: Request) {
+  async refreshTokens(@Req() req: Request): Promise<WebResponse<any>> {
     const user = req.user as { sub: string; refreshToken: string };
-    return this.authService.refreshTokens(user.sub, user.refreshToken);
+    const result = await this.authService.refreshTokens(
+      user.sub,
+      user.refreshToken,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Refresh token success',
+      data: result,
+    };
   }
 }

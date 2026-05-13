@@ -1,90 +1,108 @@
-import { Controller, Get, Post, Param, Body, Query } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  UseInterceptors,
+  UploadedFile,
+  Query,
+  UseGuards,
+  HttpStatus,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
-  ApiResponse,
-  ApiParam,
-  ApiQuery,
+  ApiConsumes,
+  ApiBody,
   ApiBearerAuth,
+  ApiResponse,
 } from '@nestjs/swagger';
 import { MotivationAnalysisService } from './motivation-analysis.service';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { WebResponse } from '../../common/dto/web-response.dto';
 
 @ApiTags('Motivation Analysis')
 @ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard)
 @Controller('motivation-analysis')
 export class MotivationAnalysisController {
-  constructor(
-    private readonly motivationAnalysisService: MotivationAnalysisService,
-  ) {}
+  constructor(private readonly analysisService: MotivationAnalysisService) {}
 
-  @Post()
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({
-    summary: 'Mulai analisis motivasi',
+    summary: 'Upload audio dan analisis motivasi',
     description:
-      'Menjalankan analisis motivasi berbasis AI terhadap rekaman mahasiswa',
+      'Mengirim audio ke AI Service dan menyimpan hasilnya ke database',
   })
-  @ApiResponse({ status: 201, description: 'Analisis berhasil dimulai' })
-  @ApiResponse({ status: 400, description: 'Data tidak valid' })
-  @ApiResponse({
-    status: 404,
-    description: 'Rekaman atau mahasiswa tidak ditemukan',
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        studentId: { type: 'string' },
+      },
+      required: ['file', 'studentId'],
+    },
   })
-  analyze(@Body() createAnalysisDto: CreateAnalysisDto) {
-    return this.motivationAnalysisService.analyze(createAnalysisDto);
-  }
-
-  @Get()
-  @ApiOperation({
-    summary: 'Ambil semua hasil analisis',
-    description: 'Mendukung pagination dengan query page & limit',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    example: 1,
-    description: 'Halaman ke berapa',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    example: 10,
-    description: 'Jumlah data per halaman',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Daftar hasil analisis berhasil diambil',
-  })
-  findAll(@Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.motivationAnalysisService.findAll(page, limit);
+  @ApiResponse({ status: 201, description: 'Analisis berhasil dilakukan' })
+  async uploadAndAnalyze(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() createAnalysisDto: CreateAnalysisDto,
+  ): Promise<WebResponse<any>> {
+    const result = await this.analysisService.analyzeAndSave(
+      file,
+      createAnalysisDto,
+    );
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Analysis success',
+      data: result,
+    };
   }
 
   @Get('student/:studentId')
-  @ApiOperation({ summary: 'Ambil semua analisis berdasarkan mahasiswa' })
-  @ApiParam({
-    name: 'studentId',
-    description: 'ID mahasiswa',
-    example: 'uuid-mahasiswa',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Riwayat analisis mahasiswa berhasil diambil',
-  })
-  @ApiResponse({ status: 404, description: 'Mahasiswa tidak ditemukan' })
-  findByStudent(@Param('studentId') studentId: string) {
-    return this.motivationAnalysisService.findByStudent(studentId);
+  @ApiOperation({ summary: 'Ambil semua riwayat analisis mahasiswa' })
+  @ApiResponse({ status: 200, description: 'Riwayat mahasiswa berhasil diambil' })
+  async getStudentHistory(
+    @Param('studentId') studentId: string,
+  ): Promise<WebResponse<any[]>> {
+    const result = await this.analysisService.findByStudent(studentId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Get student history success',
+      data: result,
+    };
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Ambil hasil analisis berdasarkan ID' })
-  @ApiParam({
-    name: 'id',
-    description: 'ID hasil analisis',
-    example: 'uuid-analisis',
-  })
-  @ApiResponse({ status: 200, description: 'Hasil analisis ditemukan' })
-  @ApiResponse({ status: 404, description: 'Hasil analisis tidak ditemukan' })
-  findOne(@Param('id') id: string) {
-    return this.motivationAnalysisService.findOne(id);
+  @ApiOperation({ summary: 'Ambil detail hasil analisis berdasarkan ID' })
+  @ApiResponse({ status: 200, description: 'Detail analisis berhasil diambil' })
+  async findOne(@Param('id') id: string): Promise<WebResponse<any>> {
+    const result = await this.analysisService.findOne(id);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Get analysis detail success',
+      data: result,
+    };
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Ambil semua hasil analisis (Admin/Dosen)' })
+  @ApiResponse({ status: 200, description: 'Semua data analisis berhasil diambil' })
+  async findAll(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ): Promise<WebResponse<any>> {
+    const result = await this.analysisService.findAll(page, limit);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Get all analysis success',
+      data: result,
+    };
   }
 }

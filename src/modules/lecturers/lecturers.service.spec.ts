@@ -19,25 +19,27 @@ describe('LecturersService', () => {
   });
 
   describe('create()', () => {
-    it('should return a message when lecturer is created', () => {
+    it('should create a lecturer', async () => {
       const dto: CreateLecturerDto = {
         nip: '198501012010011001',
         name: 'Dr. Ahmad Fauzi, M.Kom',
+        email: 'ahmad@lecturer.com',
+        password: 'password123',
         department: 'Teknik Informatika',
       };
 
-      const result = service.create(dto);
+      const result = await service.create(dto);
 
       expect(result).toBeDefined();
-      expect(result).toHaveProperty('message');
+      expect(result.nip).toBe(dto.nip);
     });
   });
 
   describe('findAll()', () => {
-    it('should return a message when called', () => {
-      const result = service.findAll();
+    it('should return a list of lecturers', async () => {
+      const result = await service.findAll();
       expect(result).toBeDefined();
-      expect(result).toHaveProperty('message');
+      expect(result).toHaveProperty('data');
     });
   });
 

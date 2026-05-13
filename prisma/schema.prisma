@@ -63,7 +63,25 @@ model Student {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   
+  analyses   MotivationAnalysis[]
+
   @@map("students")
+}
+
+model MotivationAnalysis {
+  id            String    @id @default(uuid())
+  studentId     String
+  student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  description   String?   // Contoh: "Catatan harian"
+  transcription String    @db.Text
+  prediction    String    
+  confidence    Float
+  probabilities Json?     
+  mfcc          Json?     
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("motivation_analyses")
 }
 
 model Lecturer {

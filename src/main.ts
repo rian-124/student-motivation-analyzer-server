@@ -36,10 +36,10 @@ async function bootstrap() {
   // CORS
   const corsOrigin = configService.get<string>(
     'app.corsOrigin',
-    'http://localhost:3000',
+    'http://localhost:3000http://localhost:3000',
   );
   app.enableCors({
-    origin: corsOrigin,
+    origin: [corsOrigin, 'http://localhost:5000'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
@@ -68,7 +68,7 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  
+
   SwaggerModule.setup('docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true, // Token tetap ada setelah refresh
@@ -84,4 +84,8 @@ async function bootstrap() {
   logger.log(`🚀 Server berjalan di: http://localhost:${port}/${apiPrefix}`);
   logger.log(`📄 Swagger Docs: http://localhost:${port}/docs`);
 }
-bootstrap();
+
+bootstrap().catch((err) => {
+  console.error('Bootsrap gagal:', err);
+  process.exit(1);
+});

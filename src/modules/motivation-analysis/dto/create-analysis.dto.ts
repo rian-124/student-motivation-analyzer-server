@@ -1,28 +1,14 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateAnalysisDto {
-  @ApiProperty({
-    example: 'uuid-rekaman',
-    description: 'ID rekaman yang akan dianalisis',
-  })
-  @IsString()
+  @ApiProperty({ example: 'uuid-mahasiswa', description: 'ID Mahasiswa' })
   @IsNotEmpty()
-  recordingId: string;
+  @IsUUID()
+  studentId!: string;
 
-  @ApiProperty({
-    example: 'uuid-mahasiswa',
-    description: 'ID mahasiswa yang dianalisis',
-  })
-  @IsString()
-  @IsNotEmpty()
-  studentId: string;
-
-  @ApiPropertyOptional({
-    example: 'Mahasiswa terlihat kurang antusias',
-    description: 'Catatan tambahan dari dosen',
-  })
-  @IsString()
+  @ApiProperty({ example: 'Sesi hari Senin', description: 'Deskripsi tambahan atau catatan harian', required: false })
   @IsOptional()
-  notes?: string;
+  @IsString()
+  description?: string;
 }

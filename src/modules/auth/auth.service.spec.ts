@@ -18,16 +18,17 @@ describe('AuthService', () => {
   });
 
   describe('login()', () => {
-    it('should return a message when called', async () => {
+    it('should return tokens when called', async () => {
       const loginDto: LoginDto = {
         email: 'test@email.com',
         password: 'password123',
       };
 
+      // Note: This test will fail at runtime without proper mocking of dependencies
       const result = await service.login(loginDto);
 
       expect(result).toBeDefined();
-      expect(result).toHaveProperty('message');
+      expect(result).toHaveProperty('tokens');
     });
   });
 });

@@ -45,9 +45,7 @@ export class AuthService {
     const tokens = await this.getTokens(user.id, user.email, user.role as Role);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
 
-    return {
-      tokens,
-    };
+    return tokens;
   }
 
   async logout(userId: string) {
