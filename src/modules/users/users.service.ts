@@ -47,6 +47,19 @@ export class UsersService {
         refreshToken: true,
         createdAt: true,
         updatedAt: true,
+        student: {
+          select: {
+            id: true,
+            nim: true,
+            classId: true,
+          }
+        },
+        lecturer: {
+          select: {
+            id: true,
+            nip: true,
+          }
+        }
       },
     });
 

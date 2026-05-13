@@ -105,4 +105,17 @@ export class MotivationAnalysisController {
       data: result,
     };
   }
+  @Get('graph/student/:studentId')
+  @ApiOperation({ summary: 'Ambil data grafik untuk dashboard mahasiswa' })
+  @ApiResponse({ status: 200, description: 'Data grafik berhasil diambil' })
+  async getStudentGraph(
+    @Param('studentId') studentId: string,
+  ): Promise<WebResponse<any>> {
+    const result = await this.analysisService.getStudentGraphData(studentId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Get student graph success',
+      data: result,
+    };
+  }
 }
