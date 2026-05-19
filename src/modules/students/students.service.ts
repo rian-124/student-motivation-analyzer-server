@@ -91,6 +91,7 @@ export class StudentsService {
           lecturer: { 
             include: { class: true } 
           },
+          _count: { select: { analyses: true } },
         },
         orderBy: { createdAt: 'desc' },
       }),
