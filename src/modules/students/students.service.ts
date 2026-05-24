@@ -7,10 +7,20 @@ import { Role } from '@prisma/client';
 
 @Injectable()
 export class StudentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(createStudentDto: CreateStudentDto) {
-    const { email, password, nim, name, class: className, semester, lecturerId } = createStudentDto;
+    const {
+      email,
+      password,
+      nim,
+      name,
+      class: className,
+      classId,
+      studyProgramId,
+      semester,
+      lecturerId,
+    } = createStudentDto;
 
     const existingEmail = await this.prisma.user.findUnique({ where: { email } });
     if (existingEmail) throw new ConflictException('Email sudah terdaftar');
@@ -18,20 +28,20 @@ export class StudentsService {
     const existingNim = await this.prisma.student.findUnique({ where: { nim } });
     if (existingNim) throw new ConflictException('NIM sudah terdaftar');
 
-    let finalClassId: string | null = null;
-    
-    // Auto-assign class from lecturer if lecturerId is provided
-    if (lecturerId) {
-      const lecturer = await this.prisma.lecturer.findUnique({ 
+    let finalClassId: string | null = classId ?? null;
+    let finalStudyProgramId = studyProgramId ?? null;
+
+    if (!finalClassId && lecturerId) {
+      const lecturer = await this.prisma.lecturer.findUnique({
         where: { id: lecturerId },
-        include: { class: true }
+        include: { class: true },
       });
-      if (lecturer && lecturer.classId) {
+
+      if (lecturer?.classId) {
         finalClassId = lecturer.classId;
       }
     }
 
-    // If still no classId but className is provided, find/create it
     if (!finalClassId && className) {
       const classRecord = await this.prisma.class.upsert({
         where: { name: className },
@@ -39,6 +49,14 @@ export class StudentsService {
         create: { name: className },
       });
       finalClassId = classRecord.id;
+    }
+
+    if (!finalStudyProgramId && finalClassId) {
+      const classRecord = await this.prisma.class.findUnique({
+        where: { id: finalClassId },
+        select: { studyProgramId: true },
+      });
+      finalStudyProgramId = classRecord?.studyProgramId ?? null;
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -61,12 +79,14 @@ export class StudentsService {
           userId: user.id,
           lecturerId,
           classId: finalClassId,
+          studyProgramId: finalStudyProgramId,
         },
         include: {
           user: { select: { email: true, role: true } },
           class: true,
-          lecturer: { 
-            include: { class: true } 
+          studyProgram: true,
+          lecturer: {
+            include: { class: true },
           },
         },
       });
@@ -88,8 +108,9 @@ export class StudentsService {
         include: {
           user: { select: { email: true, role: true } },
           class: true,
-          lecturer: { 
-            include: { class: true } 
+          studyProgram: true,
+          lecturer: {
+            include: { class: true },
           },
           _count: { select: { analyses: true } },
         },
@@ -114,6 +135,7 @@ export class StudentsService {
       include: {
         user: { select: { email: true, role: true } },
         class: true,
+        studyProgram: true,
         lecturer: true,
       },
     });
@@ -124,27 +146,35 @@ export class StudentsService {
 
   async update(id: string, updateStudentDto: UpdateStudentDto) {
     const student = await this.findOne(id);
-    const { lecturerId, class: className } = updateStudentDto;
+    const { lecturerId, class: className, classId, studyProgramId } = updateStudentDto;
 
-    let finalClassId: string | null = student.classId;
+    let finalClassId: string | null = classId ?? student.classId ?? null;
+    let finalStudyProgramId = studyProgramId ?? student.studyProgramId ?? null;
 
-    // Auto-assign class from lecturer if lecturerId is changed
     if (lecturerId && lecturerId !== student.lecturerId) {
-      const lecturer = await this.prisma.lecturer.findUnique({ 
+      const lecturer = await this.prisma.lecturer.findUnique({
         where: { id: lecturerId },
-        include: { class: true }
+        include: { class: true },
       });
-      if (lecturer && lecturer.classId) {
+
+      if (lecturer?.classId) {
         finalClassId = lecturer.classId;
       }
     } else if (className) {
-      // Manual class change
       const classRecord = await this.prisma.class.upsert({
         where: { name: className },
         update: {},
         create: { name: className },
       });
       finalClassId = classRecord.id;
+    }
+
+    if (!finalStudyProgramId && finalClassId) {
+      const classRecord = await this.prisma.class.findUnique({
+        where: { id: finalClassId },
+        select: { studyProgramId: true },
+      });
+      finalStudyProgramId = classRecord?.studyProgramId ?? null;
     }
 
     return this.prisma.student.update({
@@ -155,12 +185,14 @@ export class StudentsService {
         semester: updateStudentDto.semester,
         lecturerId: updateStudentDto.lecturerId,
         classId: finalClassId,
+        studyProgramId: finalStudyProgramId,
       },
       include: {
         user: { select: { email: true, role: true } },
         class: true,
-        lecturer: { 
-          include: { class: true } 
+        studyProgram: true,
+        lecturer: {
+          include: { class: true },
         },
       },
     });

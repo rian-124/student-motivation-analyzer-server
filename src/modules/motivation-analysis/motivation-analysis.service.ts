@@ -177,6 +177,26 @@ export class MotivationAnalysisService {
     return results.map((item) => this.transformAnalysis(item));
   }
 
+  async findByClass(classId: string) {
+    const results = await this.prisma.motivationAnalysis.findMany({
+      where: {
+        student: {
+          classId,
+        },
+      },
+      include: {
+        student: {
+          include: {
+            class: true,
+            studyProgram: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return results.map((item) => this.transformAnalysis(item));
+  }
 
   async findAll(page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit;

@@ -22,7 +22,7 @@ import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { Role, User } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
 @ApiTags('Students')

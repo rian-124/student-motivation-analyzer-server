@@ -27,7 +27,7 @@ import { WebResponse } from '../../common/dto/web-response.dto';
 @ApiTags('Motivation Analysis')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard)
-@Controller('motivation-analysis')
+@Controller(['motivation-analysis', 'analysis'])
 export class MotivationAnalysisController {
   constructor(private readonly analysisService: MotivationAnalysisService) {}
 
@@ -79,6 +79,18 @@ export class MotivationAnalysisController {
     };
   }
 
+  @Get('class/:classId')
+  @ApiOperation({ summary: 'Ambil semua analisis berdasarkan kelas' })
+  @ApiResponse({ status: 200, description: 'Riwayat analisis kelas berhasil diambil' })
+  async getClassHistory(@Param('classId') classId: string) {
+    const result = await this.analysisService.findByClass(classId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Get class analysis history success',
+      data: result,
+    };
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Ambil detail hasil analisis berdasarkan ID' })
   @ApiResponse({ status: 200, description: 'Detail analisis berhasil diambil' })
@@ -105,6 +117,7 @@ export class MotivationAnalysisController {
       data: result,
     };
   }
+
   @Get('graph/student/:studentId')
   @ApiOperation({ summary: 'Ambil data grafik untuk dashboard mahasiswa' })
   @ApiResponse({ status: 200, description: 'Data grafik berhasil diambil' })

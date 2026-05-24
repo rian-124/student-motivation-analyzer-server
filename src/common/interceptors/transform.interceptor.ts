@@ -21,19 +21,14 @@ export class TransformInterceptor<T>
 
     return next.handle().pipe(
       map((res) => {
-        // If the result already has a 'data' field (like paginated results),
-        // we keep the whole object but ensure it's wrapped correctly if needed.
-        // However, if we want to follow WebResponse, we should decide
-        // if 'meta' goes inside 'data' or alongside it.
-        // Typically, for paginated results: { data: [...], meta: {...} }
-        
         const hasDataField = res && typeof res === 'object' && 'data' in res;
-        
+
         return {
+          success: true,
           statusCode,
           message: res?.message || 'Success',
           data: hasDataField ? res.data : res,
-          meta: res?.meta, // Preserve meta if it exists
+          meta: res?.meta,
         };
       }),
     );

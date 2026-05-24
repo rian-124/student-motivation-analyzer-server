@@ -5,7 +5,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Analytics')
 @ApiBearerAuth('JWT-auth')
-@Controller('motivation-stats')
+@Controller(['motivation-stats', 'analytics'])
 @UseGuards(JwtAuthGuard)
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}

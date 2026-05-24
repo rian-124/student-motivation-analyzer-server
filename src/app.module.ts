@@ -7,8 +7,9 @@ import { UsersModule } from './modules/users/users.module';
 import { StudentsModule } from './modules/students/students.module';
 import { LecturersModule } from './modules/lecturers/lecturers.module';
 import { MotivationAnalysisModule } from './modules/motivation-analysis/motivation-analysis.module';
-// Feature Modules Analytics
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { ClassesModule } from './modules/classes/classes.module';
+import { ProgramsModule } from './modules/programs/programs.module';
 
 @Module({
   imports: [
@@ -29,6 +30,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     LecturersModule,
     MotivationAnalysisModule,
     AnalyticsModule,
+    ClassesModule,
+    ProgramsModule,
   ],
 })
 export class AppModule {}

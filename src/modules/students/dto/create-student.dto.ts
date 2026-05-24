@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional, IsEmail, MinLength, IsUUID } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsEmail,
+  MinLength,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateStudentDto {
   @ApiProperty({
@@ -35,10 +42,29 @@ export class CreateStudentDto {
   @IsNotEmpty()
   password: string;
 
-  @ApiPropertyOptional({ example: 'TI-A', description: 'Kelas mahasiswa' })
+  @ApiPropertyOptional({
+    example: 'TI-A',
+    description: 'Nama kelas (legacy compatibility)',
+  })
   @IsString()
   @IsOptional()
   class?: string;
+
+  @ApiPropertyOptional({
+    example: 'uuid-class-id',
+    description: 'ID kelas utama mahasiswa',
+  })
+  @IsUUID()
+  @IsOptional()
+  classId?: string;
+
+  @ApiPropertyOptional({
+    example: 'uuid-study-program-id',
+    description: 'ID program studi mahasiswa',
+  })
+  @IsUUID()
+  @IsOptional()
+  studyProgramId?: string;
 
   @ApiPropertyOptional({
     example: '5',

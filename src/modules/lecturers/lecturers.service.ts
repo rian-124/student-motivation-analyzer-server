@@ -7,10 +7,19 @@ import { Role } from '@prisma/client';
 
 @Injectable()
 export class LecturersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(createLecturerDto: CreateLecturerDto) {
-    const { email, password, nip, name, department, class: className } = createLecturerDto;
+    const {
+      email,
+      password,
+      nip,
+      name,
+      department,
+      class: className,
+      classId,
+      studyProgramId,
+    } = createLecturerDto;
 
     const existingEmail = await this.prisma.user.findUnique({ where: { email } });
     if (existingEmail) throw new ConflictException('Email sudah terdaftar');
@@ -18,14 +27,15 @@ export class LecturersService {
     const existingNip = await this.prisma.lecturer.findUnique({ where: { nip } });
     if (existingNip) throw new ConflictException('NIP sudah terdaftar');
 
-    let classId: string | null = null;
-    if (className) {
+    let finalClassId: string | null = classId ?? null;
+
+    if (!finalClassId && className) {
       const classRecord = await this.prisma.class.upsert({
         where: { name: className },
         update: {},
         create: { name: className },
       });
-      classId = classRecord.id;
+      finalClassId = classRecord.id;
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -45,7 +55,8 @@ export class LecturersService {
           nip,
           name,
           department,
-          classId,
+          classId: finalClassId,
+          studyProgramId,
           userId: user.id,
         },
         include: {
@@ -53,10 +64,11 @@ export class LecturersService {
             select: { email: true, role: true },
           },
           class: true,
+          studyProgram: true,
         },
       });
 
-      return lecturer;
+      return this.mapLecturer(lecturer);
     });
   }
 
@@ -70,9 +82,10 @@ export class LecturersService {
         include: {
           user: { select: { email: true, role: true } },
           class: true,
+          studyProgram: true,
           _count: {
-            select: { students: true }
-          }
+            select: { students: true },
+          },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -80,7 +93,7 @@ export class LecturersService {
     ]);
 
     return {
-      data,
+      data: data.map((lecturer) => this.mapLecturer(lecturer)),
       meta: {
         total,
         page,
@@ -95,19 +108,21 @@ export class LecturersService {
       include: {
         user: { select: { email: true, role: true } },
         class: true,
+        studyProgram: true,
         students: true,
       },
     });
 
     if (!lecturer) throw new NotFoundException('Dosen tidak ditemukan');
-    return lecturer;
+    return this.mapLecturer(lecturer);
   }
 
   async update(id: string, updateLecturerDto: UpdateLecturerDto) {
     await this.findOne(id);
 
-    let classId: string | undefined = undefined;
-    if (updateLecturerDto.class) {
+    let classId: string | null | undefined = updateLecturerDto.classId;
+
+    if (!classId && updateLecturerDto.class) {
       const classRecord = await this.prisma.class.upsert({
         where: { name: updateLecturerDto.class },
         update: {},
@@ -123,17 +138,26 @@ export class LecturersService {
         name: updateLecturerDto.name,
         department: updateLecturerDto.department,
         classId,
+        studyProgramId: updateLecturerDto.studyProgramId,
       },
       include: {
         user: { select: { email: true, role: true } },
         class: true,
+        studyProgram: true,
       },
-    });
+    }).then((lecturer) => this.mapLecturer(lecturer));
   }
 
   async remove(id: string) {
     const lecturer = await this.findOne(id);
     await this.prisma.user.delete({ where: { id: lecturer.userId } });
     return { message: 'Dosen dan akun berhasil dihapus' };
+  }
+
+  private mapLecturer(lecturer: any) {
+    return {
+      ...lecturer,
+      supervisedClassIds: lecturer.classId ? [lecturer.classId] : [],
+    };
   }
 }

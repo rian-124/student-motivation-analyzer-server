@@ -34,13 +34,15 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TransformInterceptor());
 
   // CORS
-  const corsOrigin = configService.get<string>(
-    'app.corsOrigin',
-    'http://localhost:3000http://localhost:3000',
-  );
+  const corsOrigins = configService
+    .get<string>('app.corsOrigin', 'http://localhost:3000')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: [corsOrigin, 'http://localhost:5000'],
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: [...corsOrigins, 'http://localhost:3000', 'http://localhost:5000'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 

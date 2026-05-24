@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional, IsEmail, MinLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsEmail,
+  MinLength,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateLecturerDto {
   @ApiProperty({
@@ -45,9 +52,25 @@ export class CreateLecturerDto {
 
   @ApiPropertyOptional({
     example: 'TI-2021-A',
-    description: 'Kelas yang diampu dosen',
+    description: 'Nama kelas (legacy compatibility)',
   })
   @IsString()
   @IsOptional()
   class?: string;
+
+  @ApiPropertyOptional({
+    example: 'uuid-class-id',
+    description: 'ID kelas yang diampu dosen',
+  })
+  @IsUUID()
+  @IsOptional()
+  classId?: string;
+
+  @ApiPropertyOptional({
+    example: 'uuid-study-program-id',
+    description: 'ID program studi dosen',
+  })
+  @IsUUID()
+  @IsOptional()
+  studyProgramId?: string;
 }

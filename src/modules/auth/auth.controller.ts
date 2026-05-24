@@ -6,6 +6,7 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  Get,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,11 +20,15 @@ import { JwtAuthGuard, JwtRefreshGuard } from '../../common/guards';
 import { CurrentUser } from '../../common/decorators';
 import { Request } from 'express';
 import { WebResponse } from '../../common/dto/web-response.dto';
+import { UsersService } from '../users/users.service';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -43,6 +48,17 @@ export class AuthController {
       message: 'Login success',
       data: result,
     };
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  @ApiOperation({ summary: 'Ambil profil user yang sedang login' })
+  @ApiResponse({ status: 200, description: 'Profil berhasil diambil' })
+  async getProfile(@CurrentUser() user: { id: string }) {
+    const profile = await this.usersService.findOne(user.id);
+    const { refreshToken: _refreshToken, ...safeProfile } = profile;
+    return safeProfile;
   }
 
   @ApiBearerAuth('JWT-auth')

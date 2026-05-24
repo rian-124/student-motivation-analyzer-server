@@ -15,6 +15,38 @@ enum Role {
   student
 }
 
+model Department {
+  id   String @id @default(uuid())
+  code String @unique
+  name String @unique
+
+  programs StudyProgram[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("departments")
+}
+
+model StudyProgram {
+  id          String  @id @default(uuid())
+  code        String  @unique
+  name        String  @unique
+  degreeLevel String?
+
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+
+  classes   Class[]
+  students  Student[]
+  lecturers Lecturer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("study_programs")
+}
+
 model User {
   id           String    @id @default(uuid())
   email        String    @unique
@@ -34,7 +66,10 @@ model User {
 model Class {
   id        String   @id @default(uuid())
   name      String   @unique // Contoh: "TI-2021-A"
-  
+
+  studyProgramId String?
+  studyProgram   StudyProgram? @relation(fields: [studyProgramId], references: [id], onDelete: SetNull)
+
   lecturers Lecturer[]
   students  Student[]
 
@@ -55,6 +90,9 @@ model Student {
   // Relasi ke Kelas
   classId    String?
   class      Class?    @relation(fields: [classId], references: [id], onDelete: SetNull)
+
+  studyProgramId String?
+  studyProgram   StudyProgram? @relation(fields: [studyProgramId], references: [id], onDelete: SetNull)
   
   // Relasi ke Dosen Wali
   lecturerId String?
@@ -96,6 +134,9 @@ model Lecturer {
   // Relasi ke Kelas (Dosen bisa mengampu sebuah kelas)
   classId    String?
   class      Class?    @relation(fields: [classId], references: [id], onDelete: SetNull)
+
+  studyProgramId String?
+  studyProgram   StudyProgram? @relation(fields: [studyProgramId], references: [id], onDelete: SetNull)
   
   // Relasi ke Mahasiswa Perwalian
   students   Student[]
