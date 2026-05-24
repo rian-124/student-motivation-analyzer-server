@@ -28,9 +28,11 @@ describe('TransformInterceptor', () => {
 
     interceptor.intercept(mockContext, mockCallHandler).subscribe((result) => {
       expect(result).toEqual({
+        success: true,
         statusCode: 200,
         message: 'Success',
         data: mockData,
+        meta: undefined,
       });
       done();
     });
@@ -49,9 +51,11 @@ describe('TransformInterceptor', () => {
 
     interceptor.intercept(mockContext, mockCallHandler).subscribe((result) => {
       expect(result).toEqual({
+        success: true,
         statusCode: 200,
         message: 'Success',
         data: null,
+        meta: undefined,
       });
       done();
     });

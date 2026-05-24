@@ -17,8 +17,19 @@ describe('AllExceptionsFilter', () => {
   afterAll(() => {
     jest.restoreAllMocks();
   });
-  let mockResponse: any;
-  let mockRequest: any;
+
+  type MockResponse = {
+    status: jest.Mock<any, any>;
+    json: jest.Mock<any, any>;
+  };
+
+  type MockRequest = {
+    method: string;
+    url: string;
+  };
+
+  let mockResponse: MockResponse;
+  let mockRequest: MockRequest;
   let mockHost: ArgumentsHost;
 
   beforeEach(() => {
@@ -47,8 +58,7 @@ describe('AllExceptionsFilter', () => {
       getArgs: jest.fn(),
       getArgByIndex: jest.fn(),
       getType: jest.fn(),
-    } satisfies ArgumentsHost;
-  });
+    };
   });
 
   it('should be defined', () => {
@@ -92,7 +102,7 @@ describe('AllExceptionsFilter', () => {
 
     expect(mockResponse.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        timestamp: expect.any(String),
+        timestamp: expect.any(String) as unknown as string,
       }),
     );
   });
