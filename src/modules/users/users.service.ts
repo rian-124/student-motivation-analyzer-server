@@ -58,6 +58,13 @@ export class UsersService {
           select: {
             id: true,
             nip: true,
+            classAssignments: {
+              include: {
+                class: {
+                  select: { id: true, name: true },
+                },
+              },
+            },
           },
         },
       },

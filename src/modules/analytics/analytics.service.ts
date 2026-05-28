@@ -4,6 +4,22 @@ import { Role } from '@prisma/client';
 
 @Injectable()
 export class AnalyticsService {
+  private readonly motivationLabels: Record<string, string> = {
+    '1': 'Sangat Rendah',
+    '2': 'Rendah',
+    '3': 'Cukup',
+    '4': 'Tinggi',
+    '5': 'Sangat Tinggi',
+  };
+
+  private readonly predictionCodes = {
+    veryLow: '1',
+    low: '2',
+    average: '3',
+    high: '4',
+    veryHigh: '5',
+  };
+
   constructor(private prisma: PrismaService) {}
 
   async getStats(userId: string, role: Role) {
@@ -35,31 +51,31 @@ export class AnalyticsService {
       this.prisma.motivationAnalysis.count({
         where: {
           ...analysisWhere,
-          prediction: 'Sangat Rendah',
+          prediction: this.predictionCodes.veryLow,
         },
       }),
       this.prisma.motivationAnalysis.count({
         where: {
           ...analysisWhere,
-          prediction: 'Rendah',
+          prediction: this.predictionCodes.low,
         },
       }),
       this.prisma.motivationAnalysis.count({
         where: {
           ...analysisWhere,
-          prediction: 'Cukup',
+          prediction: this.predictionCodes.average,
         },
       }),
       this.prisma.motivationAnalysis.count({
         where: {
           ...analysisWhere,
-          prediction: 'Tinggi',
+          prediction: this.predictionCodes.high,
         },
       }),
       this.prisma.motivationAnalysis.count({
         where: {
           ...analysisWhere,
-          prediction: 'Sangat Tinggi',
+          prediction: this.predictionCodes.veryHigh,
         },
       }),
       isAdmin ? this.prisma.class.count() : null,
@@ -110,7 +126,7 @@ export class AnalyticsService {
     });
 
     const pieChart = distribution.map((d) => ({
-      name: d.prediction,
+      name: this.motivationLabels[d.prediction] || d.prediction,
       value: d._count,
     }));
 
@@ -155,25 +171,29 @@ export class AnalyticsService {
     } else {
       const analyses = await this.prisma.motivationAnalysis.findMany({
         where: analysisWhere,
-        select: { createdAt: true, confidence: true },
-        orderBy: { createdAt: 'asc' },
+        select: {
+          confidence: true,
+          student: { select: { class: { select: { name: true } } } },
+        },
       });
 
-      const weeks: Record<string, number[]> = {};
-      analyses.forEach((a) => {
-        const week = `M${Math.ceil(a.createdAt.getDate() / 7)}`;
-        if (!weeks[week]) weeks[week] = [];
-        weeks[week].push(a.confidence);
-      });
+      const classGroups: Record<string, number[]> = {};
+      for (const a of analyses) {
+        const className = a.student?.class?.name || 'Tanpa Kelas';
+        if (!classGroups[className]) classGroups[className] = [];
+        classGroups[className].push(a.confidence);
+      }
 
-      barChart = Object.keys(weeks)
-        .map((w) => ({
-          label: w,
+      barChart = Object.keys(classGroups)
+        .map((className) => ({
+          label: className,
           value: Math.round(
-            (weeks[w].reduce((a, b) => a + b, 0) / weeks[w].length) * 100,
+            (classGroups[className].reduce((a, b) => a + b, 0) /
+              classGroups[className].length) *
+              100,
           ),
         }))
-        .slice(-8);
+        .sort((a, b) => b.value - a.value);
     }
 
     return {

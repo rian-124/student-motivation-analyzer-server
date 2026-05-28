@@ -5,8 +5,17 @@ import { PrismaService } from '../../database/prisma.service';
 export class ClassesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(lecturerId?: string) {
+    const where = lecturerId
+      ? {
+          lecturerAssignments: {
+            some: { lecturerId },
+          },
+        }
+      : {};
+
     const data = await this.prisma.class.findMany({
+      where,
       include: {
         studyProgram: {
           include: {

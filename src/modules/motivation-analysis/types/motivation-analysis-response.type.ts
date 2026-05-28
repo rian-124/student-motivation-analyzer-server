@@ -31,6 +31,8 @@ export type MotivationAnalysisResponse = {
   predictionCode: string;
   confidence: number;
   confidencePercent: number;
+  weightedScore: number | null;
+  duration: number | null;
   probabilities: AnalysisProbability[];
   result: MotivationAnalysisResultBlock;
   acoustic: {

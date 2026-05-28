@@ -1,6 +1,7 @@
 export type FlaskAnalysisResponse = {
   success: boolean;
   data: {
+    duration: number;
     transcription: string;
     mfcc: number[];
     prediction: {

@@ -1,6 +1,8 @@
 import { Controller, Get, UseGuards, Request } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '../../common/enums';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthenticatedRequest } from '../../common/types';
 
@@ -8,6 +10,7 @@ import { AuthenticatedRequest } from '../../common/types';
 @ApiBearerAuth('JWT-auth')
 @Controller(['motivation-stats', 'analytics'])
 @UseGuards(JwtAuthGuard)
+@Roles(Role.ADMIN, Role.LECTURER)
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 

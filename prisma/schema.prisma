@@ -114,6 +114,8 @@ model MotivationAnalysis {
   transcription String    @db.Text
   prediction    String    
   confidence    Float
+  weightedScore Float?
+  duration      Float?    // Durasi audio dalam detik
   probabilities Json?     
   mfcc          Json?     
   createdAt     DateTime  @default(now())

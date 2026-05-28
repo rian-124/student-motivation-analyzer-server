@@ -20,4 +20,5 @@ export type StudentGraphData = {
   weeklyTrend: StudentGraphWeeklyTrend[];
   benchmark: StudentGraphBenchmark[];
   stats: StudentGraphStats;
+  message: string;
 };

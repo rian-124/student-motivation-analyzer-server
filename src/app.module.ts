@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { appConfig, databaseConfig, jwtConfig } from './config';
 import { DatabaseModule } from './database/database.module';
@@ -10,6 +11,7 @@ import { MotivationAnalysisModule } from './modules/motivation-analysis/motivati
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ClassesModule } from './modules/classes/classes.module';
 import { ProgramsModule } from './modules/programs/programs.module';
+import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
   imports: [
@@ -32,6 +34,12 @@ import { ProgramsModule } from './modules/programs/programs.module';
     AnalyticsModule,
     ClassesModule,
     ProgramsModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
   ],
 })
 export class AppModule {}

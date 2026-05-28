@@ -29,6 +29,54 @@ export class MotivationAnalysisService {
     '5': 'Sangat Tinggi',
   };
 
+  private generateInsight(
+    latestStatusCode: string,
+    growth: number,
+    avgScore: number,
+    activityCount: number,
+  ): string {
+    const statusLabel =
+      this.motivationLabels[latestStatusCode] || latestStatusCode;
+    const isPositive = ['Sangat Tinggi', 'Tinggi'].includes(statusLabel);
+    const isMedium = statusLabel === 'Cukup';
+
+    const parts: string[] = [];
+
+    if (isPositive) {
+      parts.push(
+        `Hasil analisis terakhir menunjukkan motivasi ${statusLabel.toLowerCase()}.`,
+      );
+    } else if (isMedium) {
+      parts.push(
+        'Hasil analisis terakhir menunjukkan tingkat motivasi yang cukup.',
+      );
+    } else {
+      parts.push('Hasil analisis terakhir masih perlu ditingkatkan.');
+    }
+
+    if (growth > 5) {
+      parts.push(`Terjadi peningkatan ${growth}% dari sesi sebelumnya.`);
+    } else if (growth > 0) {
+      parts.push(`Ada sedikit peningkatan ${growth}% dari sesi sebelumnya.`);
+    } else if (growth < -5) {
+      parts.push(
+        `Terjadi penurunan ${Math.abs(growth)}% dari sesi sebelumnya.`,
+      );
+    } else if (growth < 0) {
+      parts.push(`Sedikit menurun ${Math.abs(growth)}% dari sesi sebelumnya.`);
+    } else {
+      parts.push('Skor stabil dibandingkan sesi sebelumnya.');
+    }
+
+    if (activityCount <= 1) {
+      parts.push('Teruslah merekam untuk melihat perkembangan motivasi Anda.');
+    } else {
+      parts.push(`Anda telah melakukan ${activityCount} kali rekaman.`);
+    }
+
+    return parts.join(' ');
+  }
+
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
@@ -63,7 +111,16 @@ export class MotivationAnalysisService {
         },
       );
 
-      const { transcription, prediction, mfcc } = response.data.data;
+      const { duration, transcription, prediction, mfcc } = response.data.data;
+
+      const weightedRaw = prediction.probabilities.reduce(
+        (sum, p, i) => sum + p * (i + 1),
+        0,
+      );
+      const weightedScore =
+        prediction.probabilities.length > 0
+          ? Math.round(((weightedRaw - 1) / 4) * 1000) / 10
+          : null;
 
       // 2. Simpan hasil ke Database
       const analysis = await this.prisma.motivationAnalysis.create({
@@ -73,6 +130,8 @@ export class MotivationAnalysisService {
           transcription,
           prediction: prediction.prediction,
           confidence: prediction.confidence,
+          weightedScore,
+          duration,
           probabilities: prediction.probabilities,
           mfcc,
         },
@@ -159,6 +218,8 @@ export class MotivationAnalysisService {
         percentage: Math.round(Number(value ?? 0) * 1000) / 10,
       }),
     );
+    const weightedScore =
+      analysis.weightedScore != null ? Number(analysis.weightedScore) : null;
     const student =
       'student' in analysis && analysis.student
         ? {
@@ -185,6 +246,8 @@ export class MotivationAnalysisService {
         predictionCode,
         confidence,
         confidencePercent,
+        weightedScore,
+        duration: analysis.duration ?? null,
         probabilities,
         result: {
           code: predictionCode,
@@ -425,25 +488,11 @@ export class MotivationAnalysisService {
         ? personalAnalyses[personalAnalyses.length - 2]
         : null;
 
-    // 4. Calculate Weekly Trend (Class Average)
-    const weeklyDataMap = new Map<string, { total: number; count: number }>();
-    for (const a of classAnalyses) {
-      const date = new Date(a.createdAt);
-      // Get week number or just use YYYY-WW format
-      const weekKey = `${date.getFullYear()}-W${Math.ceil(date.getDate() / 7)}`;
-      const current = weeklyDataMap.get(weekKey) || { total: 0, count: 0 };
-      weeklyDataMap.set(weekKey, {
-        total: current.total + a.confidence * 100,
-        count: current.count + 1,
-      });
-    }
-
-    const weeklyTrend = Array.from(weeklyDataMap.entries()).map(
-      ([label, val]) => ({
-        label,
-        value: Math.round(val.total / val.count),
-      }),
-    );
+    // 4. Calculate Personal Score History
+    const weeklyTrend = personalAnalyses.map((a, index) => ({
+      label: `#${index + 1}`,
+      value: Math.round(a.confidence * 100),
+    }));
 
     // 5. Calculate Benchmarking (Latest Personal vs Class Average)
     const transformedClass = classAnalyses
@@ -521,15 +570,24 @@ export class MotivationAnalysisService {
           )
         : 0;
 
+    const latestStatusCode = latestPersonal?.prediction || '';
+    const message = this.generateInsight(
+      latestStatusCode,
+      growth,
+      avgPersonalScore,
+      personalAnalyses.length,
+    );
+
     return {
       weeklyTrend,
       benchmark,
       stats: {
-        latestStatus: latestPersonal?.prediction || 'N/A',
+        latestStatus: latestStatusCode || 'N/A',
         activityCount: personalAnalyses.length,
         avgScore: avgPersonalScore,
         growth: growth,
       },
+      message,
     };
   }
 }

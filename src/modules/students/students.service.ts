@@ -12,6 +12,14 @@ import { Prisma, Role } from '@prisma/client';
 
 @Injectable()
 export class StudentsService {
+  private readonly motivationLabels: Record<string, string> = {
+    '1': 'Sangat Rendah',
+    '2': 'Rendah',
+    '3': 'Cukup',
+    '4': 'Tinggi',
+    '5': 'Sangat Tinggi',
+  };
+
   constructor(private readonly prisma: PrismaService) {}
 
   private async validateLecturerClassAccess(
@@ -131,9 +139,25 @@ export class StudentsService {
     });
   }
 
-  async findAll(page: number = 1, limit: number = 10, lecturerId?: string) {
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    lecturerId?: string,
+    classId?: string,
+    prediction?: string,
+  ) {
     const skip = (page - 1) * limit;
-    const where: Prisma.StudentWhereInput = lecturerId ? { lecturerId } : {};
+    const where: Prisma.StudentWhereInput = {};
+    if (lecturerId) where.lecturerId = lecturerId;
+    if (classId) where.classId = classId;
+    if (prediction) {
+      // Konversi label ke kode jika perlu
+      const codeFromLabel = Object.entries(this.motivationLabels).find(
+        ([, label]) => label.toLowerCase() === prediction.toLowerCase(),
+      )?.[0];
+      const dbPrediction = codeFromLabel ?? prediction;
+      where.analyses = { some: { prediction: dbPrediction } };
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.student.findMany({
@@ -154,8 +178,44 @@ export class StudentsService {
       this.prisma.student.count({ where }),
     ]);
 
+    // Ambil latest analysis tiap student
+    const studentIds = data.map((s) => s.id);
+    const latestAnalyses =
+      studentIds.length > 0
+        ? await this.prisma.motivationAnalysis.findMany({
+            where: { studentId: { in: studentIds } },
+            select: {
+              id: true,
+              studentId: true,
+              prediction: true,
+              confidence: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+          })
+        : [];
+
+    const latestMap = new Map<string, (typeof latestAnalyses)[0]>();
+    for (const a of latestAnalyses) {
+      if (!latestMap.has(a.studentId)) {
+        latestMap.set(a.studentId, a);
+      }
+    }
+
+    const dataWithLatest = data.map((student) => {
+      const raw = latestMap.get(student.id);
+      const latestAnalysis = raw
+        ? {
+            ...raw,
+            prediction:
+              this.motivationLabels[raw.prediction] ?? raw.prediction,
+          }
+        : null;
+      return { ...student, latestAnalysis };
+    });
+
     return {
-      data,
+      data: dataWithLatest,
       meta: {
         total,
         page,

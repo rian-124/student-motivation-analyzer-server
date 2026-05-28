@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Request } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -7,6 +7,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '../../common/enums';
 import { ClassesService } from './classes.service';
 import {
   ClassDetailDto,
@@ -14,19 +16,34 @@ import {
   ClassListResponseDto,
   ClassStudentsResponseDto,
 } from './dto/class.dto';
+import { PrismaService } from '../../database/prisma.service';
 
 @ApiTags('Classes')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard)
+@Roles(Role.ADMIN, Role.LECTURER)
 @Controller('classes')
 export class ClassesController {
-  constructor(private readonly classesService: ClassesService) {}
+  constructor(
+    private readonly classesService: ClassesService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Ambil semua kelas' })
   @ApiResponse({ status: 200, description: 'Daftar kelas berhasil diambil' })
   @ApiOkResponse({ type: ClassListResponseDto })
-  findAll() {
+  async findAll(@Request() req: any) {
+    const user = req.user;
+    if (user?.role === Role.LECTURER) {
+      const lecturer = await this.prisma.lecturer.findUnique({
+        where: { userId: user.id },
+        select: { id: true },
+      });
+      if (lecturer) {
+        return this.classesService.findAll(lecturer.id);
+      }
+    }
     return this.classesService.findAll();
   }
 

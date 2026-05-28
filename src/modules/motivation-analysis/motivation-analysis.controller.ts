@@ -22,6 +22,8 @@ import {
 import { MotivationAnalysisService } from './motivation-analysis.service';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '../../common/enums';
 import { WebResponse } from '../../common/dto/web-response.dto';
 import { buildWebResponse } from '../../common/helpers';
 import { MotivationAnalysisResponse, StudentGraphData } from './types';
@@ -81,6 +83,7 @@ export class MotivationAnalysisController {
   }
 
   @Get('class/:classId')
+  @Roles(Role.ADMIN, Role.LECTURER)
   @ApiOperation({ summary: 'Ambil semua analisis berdasarkan kelas' })
   @ApiResponse({
     status: 200,
@@ -112,6 +115,7 @@ export class MotivationAnalysisController {
   }
 
   @Get()
+  @Roles(Role.ADMIN, Role.LECTURER)
   @ApiOperation({ summary: 'Ambil semua hasil analisis (Admin/Dosen)' })
   @ApiResponse({
     status: 200,
@@ -131,6 +135,7 @@ export class MotivationAnalysisController {
   }
 
   @Get('graph/student/:studentId')
+  @Roles(Role.ADMIN, Role.LECTURER)
   @ApiOperation({ summary: 'Ambil data grafik untuk dashboard mahasiswa' })
   @ApiResponse({ status: 200, description: 'Data grafik berhasil diambil' })
   async getStudentGraph(
