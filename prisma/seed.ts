@@ -8,4 +8,4 @@ import { AnalysisResultSeeder } from '../src/seeder/analysis-result.seeder';
 
 seeder({
   imports: [DatabaseModule],
-}).run([UserSeeder, AcademicSeeder, AnalysisResultSeeder]);
+}).run([UserSeeder, AcademicSeeder]);

@@ -8,7 +8,21 @@ import { UpdateLecturerDto } from './dto/update-lecturer.dto';
 import { PrismaService } from '../../database/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
-import { LecturerResponse, LecturerWithRelations } from './types';
+import { LecturerResponse } from './types';
+
+type LecturerMapperInput = {
+  userId: string;
+  user?: {
+    email: string;
+    role: string;
+  } | null;
+  classAssignments: Array<{
+    classId: string;
+    class?: {
+      name: string;
+    } | null;
+  }>;
+} & Record<string, unknown>;
 
 @Injectable()
 export class LecturersService {
@@ -226,7 +240,7 @@ export class LecturersService {
     return { message: 'Dosen dan akun berhasil dihapus' };
   }
 
-  private mapLecturer(lecturer: LecturerWithRelations): LecturerResponse {
+  private mapLecturer(lecturer: LecturerMapperInput): LecturerResponse {
     return {
       ...lecturer,
       supervisedClassIds:
@@ -235,7 +249,7 @@ export class LecturersService {
       supervisedClasses:
         lecturer.classAssignments
           ?.map((assignment) => assignment.class?.name)
-          .filter(Boolean) ?? [],
+          .filter((name): name is string => Boolean(name)) ?? [],
     };
   }
 }

@@ -7,11 +7,12 @@ import {
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { WebResponse } from '../dto/web-response.dto';
+import { PaginationMeta } from '../types/pagination-meta.type';
 
 type ResponseWithData<T> = {
   message?: string;
   data: T;
-  meta?: object;
+  meta?: PaginationMeta;
 };
 
 @Injectable()
@@ -36,7 +37,7 @@ export class TransformInterceptor<T> implements NestInterceptor<
           typeof res === 'object' && res !== null && 'message' in res
             ? (res.message ?? 'Success')
             : 'Success';
-        const mappedMeta =
+        const mappedMeta: PaginationMeta | undefined =
           typeof res === 'object' && res !== null && 'meta' in res
             ? res.meta
             : undefined;

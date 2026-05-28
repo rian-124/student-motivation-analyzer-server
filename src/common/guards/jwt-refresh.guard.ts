@@ -1,13 +1,19 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ExecutionContext,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
 export class JwtRefreshGuard extends AuthGuard('jwt-refresh') {
-  handleRequest(
+  handleRequest<TUser = { id: string; role: string }>(
     err: Error | null,
-    user: { id: string; role: string } | false,
+    user: TUser | false,
     _info: string | null,
-  ) {
+    _context: ExecutionContext,
+    _status?: number,
+  ): TUser {
     if (err || !user) {
       throw (
         err ||

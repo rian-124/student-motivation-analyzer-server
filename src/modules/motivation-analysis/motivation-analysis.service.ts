@@ -80,7 +80,7 @@ export class MotivationAnalysisService {
 
       this.logger.log(`Analysis saved successfully with ID: ${analysis.id}`);
       return this.transformAnalysis(analysis);
-    } catch (error: Error | string) {
+    } catch (error) {
       this.logger.error(
         `AI Analysis failed: ${error instanceof Error ? error.message : error}`,
       );
