@@ -114,7 +114,8 @@ export class MotivationAnalysisController {
     return {
       statusCode: HttpStatus.OK,
       message: 'Get all analysis success',
-      data: result,
+      data: result.data,
+      meta: result.meta,
     };
   }
 

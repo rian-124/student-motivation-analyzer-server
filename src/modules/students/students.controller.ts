@@ -38,22 +38,8 @@ export class StudentsController {
   @Post()
   @ApiOperation({ summary: 'Tambah mahasiswa baru' })
   @ApiResponse({ status: 201, description: 'Mahasiswa berhasil ditambahkan' })
-  create(@Body() createStudentDto: CreateStudentDto, @Request() req: any) {
-    const user = req.user;
-    
-    // Jika yang menambah adalah dosen, otomatis set lecturerId ke dirinya sendiri
-    if (user.role === Role.lecturer) {
-      return this.prisma.lecturer.findUnique({
-        where: { userId: user.id }
-      }).then(lecturer => {
-        if (lecturer) {
-          createStudentDto.lecturerId = lecturer.id;
-        }
-        return this.studentsService.create(createStudentDto);
-      });
-    }
-
-    return this.studentsService.create(createStudentDto);
+  async create(@Body() createStudentDto: CreateStudentDto, @Request() req: any) {
+    return this.studentsService.create(createStudentDto, req.user);
   }
 
   @Get()

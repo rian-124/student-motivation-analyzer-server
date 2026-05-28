@@ -10,16 +10,7 @@ export class LecturersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createLecturerDto: CreateLecturerDto) {
-    const {
-      email,
-      password,
-      nip,
-      name,
-      department,
-      class: className,
-      classId,
-      studyProgramId,
-    } = createLecturerDto;
+    const { email, password, nip, name, classIds, studyProgramId } = createLecturerDto;
 
     const existingEmail = await this.prisma.user.findUnique({ where: { email } });
     if (existingEmail) throw new ConflictException('Email sudah terdaftar');
@@ -27,17 +18,14 @@ export class LecturersService {
     const existingNip = await this.prisma.lecturer.findUnique({ where: { nip } });
     if (existingNip) throw new ConflictException('NIP sudah terdaftar');
 
-    let finalClassId: string | null = classId ?? null;
+    const selectedClasses = classIds?.length
+      ? await this.prisma.class.findMany({
+          where: { id: { in: classIds } },
+          include: { studyProgram: { include: { department: true } } },
+        })
+      : [];
 
-    if (!finalClassId && className) {
-      const classRecord = await this.prisma.class.upsert({
-        where: { name: className },
-        update: {},
-        create: { name: className },
-      });
-      finalClassId = classRecord.id;
-    }
-
+    const department = selectedClasses[0]?.studyProgram?.department?.name ?? null;
     const hashedPassword = await bcrypt.hash(password, 10);
 
     return this.prisma.$transaction(async (tx) => {
@@ -55,18 +43,27 @@ export class LecturersService {
           nip,
           name,
           department,
-          classId: finalClassId,
           studyProgramId,
           userId: user.id,
         },
         include: {
-          user: {
-            select: { email: true, role: true },
-          },
-          class: true,
+          user: { select: { email: true, role: true } },
           studyProgram: true,
+          classAssignments: { include: { class: { select: { id: true, name: true } } } },
         },
       });
+
+      if (classIds?.length) {
+        await tx.lecturerClassAssignment.createMany({
+          data: classIds.map((classId) => ({ lecturerId: lecturer.id, classId })),
+          skipDuplicates: true,
+        });
+
+        await tx.student.updateMany({
+          where: { classId: { in: classIds } },
+          data: { lecturerId: lecturer.id },
+        });
+      }
 
       return this.mapLecturer(lecturer);
     });
@@ -81,11 +78,9 @@ export class LecturersService {
         take: limit,
         include: {
           user: { select: { email: true, role: true } },
-          class: true,
           studyProgram: true,
-          _count: {
-            select: { students: true },
-          },
+          classAssignments: { include: { class: { select: { id: true, name: true } } } },
+          _count: { select: { students: true } },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -107,9 +102,9 @@ export class LecturersService {
       where: { id },
       include: {
         user: { select: { email: true, role: true } },
-        class: true,
         studyProgram: true,
-        students: true,
+        students: { select: { classId: true } },
+        classAssignments: { include: { class: { select: { id: true, name: true } } } },
       },
     });
 
@@ -118,34 +113,82 @@ export class LecturersService {
   }
 
   async update(id: string, updateLecturerDto: UpdateLecturerDto) {
-    await this.findOne(id);
+    const existingLecturer = await this.findOne(id);
+    const { email } = updateLecturerDto;
 
-    let classId: string | null | undefined = updateLecturerDto.classId;
-
-    if (!classId && updateLecturerDto.class) {
-      const classRecord = await this.prisma.class.upsert({
-        where: { name: updateLecturerDto.class },
-        update: {},
-        create: { name: updateLecturerDto.class },
-      });
-      classId = classRecord.id;
+    if (email && email !== existingLecturer.user?.email) {
+      const existingEmail = await this.prisma.user.findUnique({ where: { email } });
+      if (existingEmail) throw new ConflictException('Email sudah terdaftar');
     }
 
-    return this.prisma.lecturer.update({
-      where: { id },
-      data: {
-        nip: updateLecturerDto.nip,
-        name: updateLecturerDto.name,
-        department: updateLecturerDto.department,
-        classId,
-        studyProgramId: updateLecturerDto.studyProgramId,
-      },
-      include: {
-        user: { select: { email: true, role: true } },
-        class: true,
-        studyProgram: true,
-      },
-    }).then((lecturer) => this.mapLecturer(lecturer));
+    const classIds = updateLecturerDto.classIds;
+    const selectedClasses = classIds?.length
+      ? await this.prisma.class.findMany({
+          where: { id: { in: classIds } },
+          include: { studyProgram: { include: { department: true } } },
+        })
+      : [];
+
+    const department = classIds
+      ? selectedClasses[0]?.studyProgram?.department?.name ?? null
+      : undefined;
+
+    return this.prisma.$transaction(async (tx) => {
+      if (updateLecturerDto.password) {
+        const hashedPassword = await bcrypt.hash(updateLecturerDto.password, 10);
+        await tx.user.update({
+          where: { id: existingLecturer.userId },
+          data: { password: hashedPassword },
+        });
+      }
+
+      if (email) {
+        await tx.user.update({
+          where: { id: existingLecturer.userId },
+          data: { email },
+        });
+      }
+
+      const lecturer = await tx.lecturer.update({
+        where: { id },
+        data: {
+          nip: updateLecturerDto.nip,
+          name: updateLecturerDto.name,
+          department,
+          studyProgramId: updateLecturerDto.studyProgramId,
+        },
+        include: {
+          user: { select: { email: true, role: true } },
+          studyProgram: true,
+          classAssignments: { include: { class: { select: { id: true, name: true } } } },
+        },
+      });
+
+      if (classIds) {
+        await tx.lecturerClassAssignment.deleteMany({ where: { lecturerId: id } });
+
+        if (classIds.length > 0) {
+          await tx.lecturerClassAssignment.createMany({
+            data: classIds.map((classId) => ({ lecturerId: id, classId })),
+            skipDuplicates: true,
+          });
+        }
+
+        await tx.student.updateMany({
+          where: { lecturerId: id },
+          data: { lecturerId: null },
+        });
+
+        if (classIds.length > 0) {
+          await tx.student.updateMany({
+            where: { classId: { in: classIds } },
+            data: { lecturerId: id },
+          });
+        }
+      }
+
+      return this.mapLecturer(lecturer);
+    });
   }
 
   async remove(id: string) {
@@ -157,7 +200,9 @@ export class LecturersService {
   private mapLecturer(lecturer: any) {
     return {
       ...lecturer,
-      supervisedClassIds: lecturer.classId ? [lecturer.classId] : [],
+      supervisedClassIds: lecturer.classAssignments?.map((assignment: any) => assignment.classId) ?? [],
+      supervisedClasses:
+        lecturer.classAssignments?.map((assignment: any) => assignment.class?.name).filter(Boolean) ?? [],
     };
   }
 }

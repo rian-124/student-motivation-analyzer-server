@@ -13,6 +13,13 @@ import { FlaskAnalysisResponse } from '../../common/interfaces/motivation-analys
 export class MotivationAnalysisService {
   private readonly logger = new Logger(MotivationAnalysisService.name);
   private readonly flaskApiUrl: string;
+  private readonly motivationLabels: Record<string, string> = {
+    '1': 'Sangat Rendah',
+    '2': 'Rendah',
+    '3': 'Cukup',
+    '4': 'Tinggi',
+    '5': 'Sangat Tinggi',
+  };
 
   constructor(
     private prisma: PrismaService,
@@ -85,18 +92,72 @@ export class MotivationAnalysisService {
     if (!analysis) return null;
     
     let mfccData = analysis.mfcc;
+    const predictionCode = String(analysis.prediction ?? '');
+    const predictionLabel =
+      this.motivationLabels[predictionCode] || predictionCode || 'Tidak diketahui';
+    const confidence = Number(analysis.confidence ?? 0);
+    const confidencePercent = Math.round(confidence * 1000) / 10;
+    const rawProbabilities = Array.isArray(analysis.probabilities)
+      ? analysis.probabilities
+      : [];
+    const probabilities = rawProbabilities.map((value: number, index: number) => ({
+      code: String(index + 1),
+      label: this.motivationLabels[String(index + 1)] ?? `Kelas ${index + 1}`,
+      value,
+      percentage: Math.round(Number(value ?? 0) * 1000) / 10,
+    }));
+    const student = analysis.student
+      ? {
+          id: analysis.student.id,
+          nim: analysis.student.nim,
+          name: analysis.student.name,
+          semester: analysis.student.semester,
+          classId: analysis.student.classId,
+          className: analysis.student.class?.name ?? null,
+          studyProgramId: analysis.student.studyProgramId,
+          studyProgramName: analysis.student.studyProgram?.name ?? null,
+          lecturerId: analysis.student.lecturerId,
+          lecturerName: analysis.student.lecturer?.name ?? null,
+        }
+      : undefined;
     
     if (typeof mfccData === 'string') {
       try {
         mfccData = JSON.parse(mfccData);
-      } catch (e) {
-        this.logger.error(`Failed to parse MFCC string: ${e.message}`);
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        this.logger.error(`Failed to parse MFCC string: ${message}`);
       }
     }
 
     if (!mfccData || !Array.isArray(mfccData) || mfccData.length === 0) {
       return {
-        ...analysis,
+        id: analysis.id,
+        studentId: analysis.studentId,
+        description: analysis.description,
+        transcription: analysis.transcription,
+        prediction: predictionLabel,
+        predictionCode,
+        confidence,
+        confidencePercent,
+        probabilities,
+        result: {
+          code: predictionCode,
+          label: predictionLabel,
+          confidence,
+          confidencePercent,
+          probabilities,
+        },
+        acoustic: {
+          mfcc: [],
+          metrics: {
+            energy: 0,
+            speed: 0,
+            pitch: 0,
+            fluency: 0,
+            articulation: 0,
+          },
+        },
         metrics: {
           energy: 0,
           speed: 0,
@@ -104,6 +165,9 @@ export class MotivationAnalysisService {
           fluency: 0,
           articulation: 0,
         },
+        createdAt: analysis.createdAt,
+        updatedAt: analysis.updatedAt,
+        student,
       };
     }
 
@@ -154,15 +218,39 @@ export class MotivationAnalysisService {
     const articulation = normalize(((averages[10] || 0) + (averages[11] || 0) + (averages[12] || 0)) / 3, 10);
 
 
+    const metrics = {
+      energy,
+      speed,
+      pitch,
+      fluency,
+      articulation,
+    };
+
     return {
-      ...analysis,
-      metrics: {
-        energy,
-        speed,
-        pitch,
-        fluency,
-        articulation,
+      id: analysis.id,
+      studentId: analysis.studentId,
+      description: analysis.description,
+      transcription: analysis.transcription,
+      prediction: predictionLabel,
+      predictionCode,
+      confidence,
+      confidencePercent,
+      probabilities,
+      result: {
+        code: predictionCode,
+        label: predictionLabel,
+        confidence,
+        confidencePercent,
+        probabilities,
       },
+      acoustic: {
+        mfcc: mfccData,
+        metrics,
+      },
+      metrics,
+      createdAt: analysis.createdAt,
+      updatedAt: analysis.updatedAt,
+      student,
     };
   }
 
@@ -170,7 +258,13 @@ export class MotivationAnalysisService {
     const results = await this.prisma.motivationAnalysis.findMany({
       where: { studentId },
       include: {
-        student: true,
+        student: {
+          include: {
+            class: true,
+            studyProgram: true,
+            lecturer: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -189,6 +283,7 @@ export class MotivationAnalysisService {
           include: {
             class: true,
             studyProgram: true,
+            lecturer: true,
           },
         },
       },
@@ -208,6 +303,8 @@ export class MotivationAnalysisService {
           student: {
             include: {
               class: true,
+              studyProgram: true,
+              lecturer: true,
             },
           },
         },
@@ -234,6 +331,7 @@ export class MotivationAnalysisService {
         student: {
           include: {
             class: true,
+            studyProgram: true,
             lecturer: true,
           },
         },

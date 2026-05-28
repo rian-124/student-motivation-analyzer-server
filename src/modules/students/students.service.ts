@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { PrismaService } from '../../database/prisma.service';
@@ -9,7 +9,18 @@ import { Role } from '@prisma/client';
 export class StudentsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createStudentDto: CreateStudentDto) {
+  private async validateLecturerClassAccess(lecturerId: string, classId: string) {
+    const assignment = await this.prisma.lecturerClassAssignment.findFirst({
+      where: { lecturerId, classId },
+      select: { id: true },
+    });
+
+    if (!assignment) {
+      throw new BadRequestException('Kelas tidak termasuk perwalian dosen yang dipilih');
+    }
+  }
+
+  async create(createStudentDto: CreateStudentDto, currentUser?: { id: string; role: Role }) {
     const {
       email,
       password,
@@ -19,7 +30,7 @@ export class StudentsService {
       classId,
       studyProgramId,
       semester,
-      lecturerId,
+      lecturerId: providedLecturerId,
     } = createStudentDto;
 
     const existingEmail = await this.prisma.user.findUnique({ where: { email } });
@@ -28,17 +39,17 @@ export class StudentsService {
     const existingNim = await this.prisma.student.findUnique({ where: { nim } });
     if (existingNim) throw new ConflictException('NIM sudah terdaftar');
 
-    let finalClassId: string | null = classId ?? null;
+    let lecturerId = providedLecturerId ?? null;
+    let finalClassId: string = classId;
     let finalStudyProgramId = studyProgramId ?? null;
 
-    if (!finalClassId && lecturerId) {
+    if (!lecturerId && currentUser?.role === Role.lecturer) {
       const lecturer = await this.prisma.lecturer.findUnique({
-        where: { id: lecturerId },
-        include: { class: true },
+        where: { userId: currentUser.id },
       });
 
-      if (lecturer?.classId) {
-        finalClassId = lecturer.classId;
+      if (lecturer) {
+        lecturerId = lecturer.id;
       }
     }
 
@@ -49,6 +60,14 @@ export class StudentsService {
         create: { name: className },
       });
       finalClassId = classRecord.id;
+    }
+
+    if (!finalClassId) {
+      throw new BadRequestException('classId wajib diisi');
+    }
+
+    if (lecturerId) {
+      await this.validateLecturerClassAccess(lecturerId, finalClassId);
     }
 
     if (!finalStudyProgramId && finalClassId) {
@@ -86,7 +105,7 @@ export class StudentsService {
           class: true,
           studyProgram: true,
           lecturer: {
-            include: { class: true },
+            include: { classAssignments: { include: { class: true } } },
           },
         },
       });
@@ -110,7 +129,7 @@ export class StudentsService {
           class: true,
           studyProgram: true,
           lecturer: {
-            include: { class: true },
+            include: { classAssignments: { include: { class: true } } },
           },
           _count: { select: { analyses: true } },
         },
@@ -146,27 +165,23 @@ export class StudentsService {
 
   async update(id: string, updateStudentDto: UpdateStudentDto) {
     const student = await this.findOne(id);
-    const { lecturerId, class: className, classId, studyProgramId } = updateStudentDto;
+    const { lecturerId, class: className, classId, studyProgramId, password, nim, name, semester } = updateStudentDto;
 
     let finalClassId: string | null = classId ?? student.classId ?? null;
     let finalStudyProgramId = studyProgramId ?? student.studyProgramId ?? null;
+    const finalLecturerId = lecturerId ?? student.lecturerId ?? null;
 
-    if (lecturerId && lecturerId !== student.lecturerId) {
-      const lecturer = await this.prisma.lecturer.findUnique({
-        where: { id: lecturerId },
-        include: { class: true },
-      });
-
-      if (lecturer?.classId) {
-        finalClassId = lecturer.classId;
-      }
-    } else if (className) {
+    if (className && !classId) {
       const classRecord = await this.prisma.class.upsert({
         where: { name: className },
         update: {},
         create: { name: className },
       });
       finalClassId = classRecord.id;
+    }
+
+    if (finalLecturerId && finalClassId) {
+      await this.validateLecturerClassAccess(finalLecturerId, finalClassId);
     }
 
     if (!finalStudyProgramId && finalClassId) {
@@ -177,24 +192,36 @@ export class StudentsService {
       finalStudyProgramId = classRecord?.studyProgramId ?? null;
     }
 
-    return this.prisma.student.update({
-      where: { id },
-      data: {
-        nim: updateStudentDto.nim,
-        name: updateStudentDto.name,
-        semester: updateStudentDto.semester,
-        lecturerId: updateStudentDto.lecturerId,
-        classId: finalClassId,
-        studyProgramId: finalStudyProgramId,
-      },
-      include: {
-        user: { select: { email: true, role: true } },
-        class: true,
-        studyProgram: true,
-        lecturer: {
-          include: { class: true },
+    return this.prisma.$transaction(async (tx) => {
+      if (password) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await tx.user.update({
+          where: { id: student.userId },
+          data: { password: hashedPassword },
+        });
+      }
+
+      const updatedStudent = await tx.student.update({
+        where: { id },
+        data: {
+          nim: nim ?? student.nim,
+          name: name ?? student.name,
+          semester: semester ?? student.semester,
+          lecturerId: finalLecturerId,
+          classId: finalClassId,
+          studyProgramId: finalStudyProgramId,
         },
-      },
+        include: {
+          user: { select: { email: true, role: true } },
+          class: true,
+          studyProgram: true,
+          lecturer: {
+            include: { classAssignments: { include: { class: true } } },
+          },
+        },
+      });
+
+      return updatedStudent;
     });
   }
 

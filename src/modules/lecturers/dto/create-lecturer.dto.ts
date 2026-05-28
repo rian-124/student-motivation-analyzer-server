@@ -6,6 +6,7 @@ import {
   IsEmail,
   MinLength,
   IsUUID,
+  IsArray,
 } from 'class-validator';
 
 export class CreateLecturerDto {
@@ -15,7 +16,7 @@ export class CreateLecturerDto {
   })
   @IsString()
   @IsNotEmpty()
-  nip: string;
+  nip!: string;
 
   @ApiProperty({
     example: 'Dr. Ahmad Fauzi, M.Kom',
@@ -23,7 +24,7 @@ export class CreateLecturerDto {
   })
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @ApiProperty({
     example: 'ahmad@lecturer.com',
@@ -31,7 +32,7 @@ export class CreateLecturerDto {
   })
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  email!: string;
 
   @ApiProperty({
     example: 'password123',
@@ -40,31 +41,17 @@ export class CreateLecturerDto {
   @IsString()
   @MinLength(6)
   @IsNotEmpty()
-  password: string;
+  password!: string;
 
   @ApiPropertyOptional({
-    example: 'Teknik Informatika',
-    description: 'Jurusan / Program Studi dosen',
+    example: ['uuid-class-id-1', 'uuid-class-id-2'],
+    description: 'Daftar ID kelas perwalian dosen',
+    type: [String],
   })
-  @IsString()
+  @IsArray()
+  @IsUUID('4', { each: true })
   @IsOptional()
-  department?: string;
-
-  @ApiPropertyOptional({
-    example: 'TI-2021-A',
-    description: 'Nama kelas (legacy compatibility)',
-  })
-  @IsString()
-  @IsOptional()
-  class?: string;
-
-  @ApiPropertyOptional({
-    example: 'uuid-class-id',
-    description: 'ID kelas yang diampu dosen',
-  })
-  @IsUUID()
-  @IsOptional()
-  classId?: string;
+  classIds?: string[];
 
   @ApiPropertyOptional({
     example: 'uuid-study-program-id',

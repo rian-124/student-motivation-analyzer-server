@@ -21,16 +21,40 @@ export class AnalyticsService {
     const studentWhere = isLecturer ? { lecturerId } : {};
     const analysisWhere = isLecturer ? { student: { lecturerId } } : {};
 
-    const [totalStudents, totalAnalyses, lowMotivation, totalClasses] = await Promise.all([
+    const [totalStudents, veryLowMotivation, lowMotivation, averageMotivation, highMotivation, veryHighMotivation, totalClasses, totalAnalyses] = await Promise.all([
       this.prisma.student.count({ where: studentWhere }),
-      this.prisma.motivationAnalysis.count({ where: analysisWhere }),
       this.prisma.motivationAnalysis.count({ 
         where: { 
           ...analysisWhere,
-          prediction: 'Amotivasi' 
+          prediction: 'Sangat Rendah' 
+        } 
+      }),
+      this.prisma.motivationAnalysis.count({ 
+        where: { 
+          ...analysisWhere,
+          prediction: 'Rendah' 
+        } 
+      }),
+      this.prisma.motivationAnalysis.count({ 
+        where: { 
+          ...analysisWhere,
+          prediction: 'Cukup' 
+        } 
+      }),
+      this.prisma.motivationAnalysis.count({ 
+        where: { 
+          ...analysisWhere,
+          prediction: 'Tinggi' 
+        } 
+      }),
+      this.prisma.motivationAnalysis.count({ 
+        where: { 
+          ...analysisWhere,
+          prediction: 'Sangat Tinggi' 
         } 
       }),
       isAdmin ? this.prisma.class.count() : null,
+      this.prisma.motivationAnalysis.count({ where: analysisWhere }),
     ]);
 
     // Calculate class average
@@ -45,8 +69,11 @@ export class AnalyticsService {
 
     return {
       totalStudents,
-      totalAnalyses,
+      veryLowMotivation,
       lowMotivation,
+      averageMotivation,
+      highMotivation,
+      veryHighMotivation,
       totalClasses: isAdmin ? totalClasses : undefined,
       classAverage: !isAdmin ? classAverage : undefined,
     };
@@ -81,26 +108,37 @@ export class AnalyticsService {
     // Bar Chart Data
     let barChart: { label: string; value: number }[] = [];
     if (isAdmin) {
-      const classes = await this.prisma.class.findMany({
+      const departments = await this.prisma.department.findMany({
         include: {
-          students: {
+          programs: {
             include: {
-              analyses: true
-            }
-          }
-        }
+              classes: {
+                include: {
+                  students: {
+                    include: {
+                      analyses: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       });
 
-      barChart = classes.map(c => {
-        const analyses = c.students.flatMap(s => s.analyses);
+      barChart = departments.map((department) => {
+        const analyses = department.programs
+          .flatMap((program) => program.classes)
+          .flatMap((classItem) => classItem.students)
+          .flatMap((student) => student.analyses);
         const avg = analyses.length > 0 
           ? analyses.reduce((acc, curr) => acc + curr.confidence, 0) / analyses.length
           : 0;
         return {
-          label: c.name,
-          value: Math.round(avg * 100)
+          label: department.name,
+          value: Math.round(avg * 100),
         };
-      });
+      }).sort((a, b) => b.value - a.value);
     } else {
       const analyses = await this.prisma.motivationAnalysis.findMany({
         where: analysisWhere,

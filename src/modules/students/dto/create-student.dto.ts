@@ -50,13 +50,13 @@ export class CreateStudentDto {
   @IsOptional()
   class?: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 'uuid-class-id',
     description: 'ID kelas utama mahasiswa',
   })
   @IsUUID()
-  @IsOptional()
-  classId?: string;
+  @IsNotEmpty()
+  classId: string;
 
   @ApiPropertyOptional({
     example: 'uuid-study-program-id',

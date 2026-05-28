@@ -11,5 +11,8 @@ export class WebResponse<T> {
   data?: T;
 
   @ApiProperty({ example: null, required: false })
+  meta?: any;
+
+  @ApiProperty({ example: null, required: false })
   errors?: any;
 }

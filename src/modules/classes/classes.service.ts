@@ -13,24 +13,70 @@ export class ClassesService {
             department: true,
           },
         },
+        students: {
+          select: {
+            id: true,
+          },
+        },
         _count: {
           select: {
             students: true,
-            lecturers: true,
+            lecturerAssignments: true,
           },
         },
       },
-      orderBy: {
-        name: 'asc',
-      },
     });
 
+    const studentIds = data.flatMap((classItem) =>
+      classItem.students.map((student) => student.id),
+    );
+
+    const analyses = studentIds.length
+      ? await this.prisma.motivationAnalysis.findMany({
+          where: {
+            studentId: { in: studentIds },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        })
+      : [];
+
+    const latestByStudent = new Map<string, (typeof analyses)[number]>();
+    analyses.forEach((analysis) => {
+      if (!latestByStudent.has(analysis.studentId)) {
+        latestByStudent.set(analysis.studentId, analysis);
+      }
+    });
+
+    const rankedData = data
+      .map((classItem) => {
+        const scores = classItem.students.map((student) => {
+          const latest = latestByStudent.get(student.id);
+          return latest ? Math.round(latest.confidence * 100) : 0;
+        });
+        const averageScore =
+          scores.length > 0
+            ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
+            : 0;
+
+        return {
+          ...classItem,
+          averageScore,
+        };
+      })
+      .sort((a, b) => b.averageScore - a.averageScore || a.name.localeCompare(b.name))
+      .map((classItem, index) => ({
+        ...classItem,
+        rank: index + 1,
+      }));
+
     return {
-      data,
+      data: rankedData,
       meta: {
-        total: data.length,
+        total: rankedData.length,
         page: 1,
-        limit: data.length,
+        limit: rankedData.length,
       },
     };
   }
@@ -49,11 +95,15 @@ export class ClassesService {
             name: 'asc',
           },
         },
-        lecturers: {
+        lecturerAssignments: {
           include: {
-            user: {
-              select: {
-                email: true,
+            lecturer: {
+              include: {
+                user: {
+                  select: {
+                    email: true,
+                  },
+                },
               },
             },
           },

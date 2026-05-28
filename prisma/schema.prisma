@@ -70,7 +70,7 @@ model Class {
   studyProgramId String?
   studyProgram   StudyProgram? @relation(fields: [studyProgramId], references: [id], onDelete: SetNull)
 
-  lecturers Lecturer[]
+  lecturerAssignments LecturerClassAssignment[]
   students  Student[]
 
   createdAt DateTime @default(now())
@@ -131,18 +131,32 @@ model Lecturer {
   userId     String   @unique
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  // Relasi ke Kelas (Dosen bisa mengampu sebuah kelas)
-  classId    String?
-  class      Class?    @relation(fields: [classId], references: [id], onDelete: SetNull)
-
   studyProgramId String?
   studyProgram   StudyProgram? @relation(fields: [studyProgramId], references: [id], onDelete: SetNull)
   
   // Relasi ke Mahasiswa Perwalian
   students   Student[]
+  classAssignments LecturerClassAssignment[]
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   
   @@map("lecturers")
+}
+
+model LecturerClassAssignment {
+  id         String   @id @default(uuid())
+  lecturerId String
+  classId    String
+
+  lecturer Lecturer @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+  class    Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([lecturerId, classId])
+  @@index([lecturerId])
+  @@index([classId])
+  @@map("lecturer_class_assignments")
 }
