@@ -20,7 +20,7 @@ import {
 import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { JwtAuthGuard, RolesGuard } from '../../common/guards';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums';
 import { PrismaService } from '../../database/prisma.service';
@@ -29,7 +29,7 @@ import { AuthenticatedRequest } from '../../common/types';
 @ApiTags('Students')
 @ApiBearerAuth('JWT-auth')
 @Controller('students')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class StudentsController {
   constructor(
     private readonly studentsService: StudentsService,

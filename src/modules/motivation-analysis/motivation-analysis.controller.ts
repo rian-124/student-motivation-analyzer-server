@@ -21,7 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { MotivationAnalysisService } from './motivation-analysis.service';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { JwtAuthGuard, RolesGuard } from '../../common/guards';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums';
 import { WebResponse } from '../../common/dto/web-response.dto';
@@ -30,7 +30,7 @@ import { MotivationAnalysisResponse, StudentGraphData } from './types';
 
 @ApiTags('Motivation Analysis')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller(['motivation-analysis', 'analysis'])
 export class MotivationAnalysisController {
   constructor(private readonly analysisService: MotivationAnalysisService) {}
@@ -135,7 +135,6 @@ export class MotivationAnalysisController {
   }
 
   @Get('graph/student/:studentId')
-  @Roles(Role.ADMIN, Role.LECTURER)
   @ApiOperation({ summary: 'Ambil data grafik untuk dashboard mahasiswa' })
   @ApiResponse({ status: 200, description: 'Data grafik berhasil diambil' })
   async getStudentGraph(

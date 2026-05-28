@@ -6,7 +6,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { JwtAuthGuard, RolesGuard } from '../../common/guards';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums';
 import { ClassesService } from './classes.service';
@@ -20,8 +20,8 @@ import { PrismaService } from '../../database/prisma.service';
 
 @ApiTags('Classes')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JwtAuthGuard)
-@Roles(Role.ADMIN, Role.LECTURER)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN, Role.LECTURER, Role.STUDENT)
 @Controller('classes')
 export class ClassesController {
   constructor(
