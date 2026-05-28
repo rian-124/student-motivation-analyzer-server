@@ -89,8 +89,7 @@ export class AnalysisResultSeeder implements Seeder {
       const firstName =
         firstNames[Math.floor(Math.random() * firstNames.length)];
 
-      const lastName =
-        lastNames[Math.floor(Math.random() * lastNames.length)];
+      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
 
       return `${firstName} ${lastName}`;
     }
@@ -193,8 +192,7 @@ export class AnalysisResultSeeder implements Seeder {
 
       for (const currentClass of program.classes) {
         // Random 20 - 30 mahasiswa
-        const totalStudents =
-          Math.floor(Math.random() * (30 - 20 + 1)) + 20;
+        const totalStudents = Math.floor(Math.random() * (30 - 20 + 1)) + 20;
 
         for (let i = 1; i <= totalStudents; i++) {
           const randomName = getRandomName();
@@ -235,8 +233,7 @@ export class AnalysisResultSeeder implements Seeder {
           // =========================
           if (totalAnalysisCreated < MAX_ANALYSIS) {
             // random 1 - 5 analysis per mahasiswa
-            const totalStudentAnalysis =
-              Math.floor(Math.random() * 5) + 1;
+            const totalStudentAnalysis = Math.floor(Math.random() * 5) + 1;
 
             for (let j = 1; j <= totalStudentAnalysis; j++) {
               if (totalAnalysisCreated >= MAX_ANALYSIS) {
@@ -244,15 +241,11 @@ export class AnalysisResultSeeder implements Seeder {
               }
 
               const randomPrediction =
-                predictions[
-                  Math.floor(Math.random() * predictions.length)
-                ];
+                predictions[Math.floor(Math.random() * predictions.length)];
 
               const randomTranscription =
                 dummyTranscriptions[
-                  Math.floor(
-                    Math.random() * dummyTranscriptions.length,
-                  )
+                  Math.floor(Math.random() * dummyTranscriptions.length)
                 ];
 
               await this.prisma.motivationAnalysis.create({

@@ -18,9 +18,16 @@ describe('AllExceptionsFilter', () => {
     jest.restoreAllMocks();
   });
 
+  type JsonResponsePayload = {
+    statusCode: number;
+    timestamp: string;
+    path: string;
+    message: string | string[];
+  };
+
   type MockResponse = {
-    status: jest.Mock<any, any>;
-    json: jest.Mock<any, any>;
+    status: jest.MockedFunction<(code: number) => MockResponse>;
+    json: jest.MockedFunction<(payload: JsonResponsePayload) => MockResponse>;
   };
 
   type MockRequest = {
@@ -100,10 +107,10 @@ describe('AllExceptionsFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    expect(mockResponse.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        timestamp: expect.any(String) as unknown as string,
-      }),
-    );
+    const firstCallPayload = mockResponse.json.mock.calls[0]?.[0];
+    expect(firstCallPayload).toBeDefined();
+    if (firstCallPayload) {
+      expect(firstCallPayload.timestamp).toEqual(expect.any(String));
+    }
   });
 });

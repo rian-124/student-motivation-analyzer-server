@@ -1,26 +1,39 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { PrismaService } from '../../database/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 
 @Injectable()
 export class StudentsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async validateLecturerClassAccess(lecturerId: string, classId: string) {
+  private async validateLecturerClassAccess(
+    lecturerId: string,
+    classId: string,
+  ) {
     const assignment = await this.prisma.lecturerClassAssignment.findFirst({
       where: { lecturerId, classId },
       select: { id: true },
     });
 
     if (!assignment) {
-      throw new BadRequestException('Kelas tidak termasuk perwalian dosen yang dipilih');
+      throw new BadRequestException(
+        'Kelas tidak termasuk perwalian dosen yang dipilih',
+      );
     }
   }
 
-  async create(createStudentDto: CreateStudentDto, currentUser?: { id: string; role: Role }) {
+  async create(
+    createStudentDto: CreateStudentDto,
+    currentUser?: { id: string; role: Role },
+  ) {
     const {
       email,
       password,
@@ -33,10 +46,14 @@ export class StudentsService {
       lecturerId: providedLecturerId,
     } = createStudentDto;
 
-    const existingEmail = await this.prisma.user.findUnique({ where: { email } });
+    const existingEmail = await this.prisma.user.findUnique({
+      where: { email },
+    });
     if (existingEmail) throw new ConflictException('Email sudah terdaftar');
 
-    const existingNim = await this.prisma.student.findUnique({ where: { nim } });
+    const existingNim = await this.prisma.student.findUnique({
+      where: { nim },
+    });
     if (existingNim) throw new ConflictException('NIM sudah terdaftar');
 
     let lecturerId = providedLecturerId ?? null;
@@ -116,8 +133,7 @@ export class StudentsService {
 
   async findAll(page: number = 1, limit: number = 10, lecturerId?: string) {
     const skip = (page - 1) * limit;
-    const where: any = {};
-    if (lecturerId) where.lecturerId = lecturerId;
+    const where: Prisma.StudentWhereInput = lecturerId ? { lecturerId } : {};
 
     const [data, total] = await Promise.all([
       this.prisma.student.findMany({
@@ -165,7 +181,16 @@ export class StudentsService {
 
   async update(id: string, updateStudentDto: UpdateStudentDto) {
     const student = await this.findOne(id);
-    const { lecturerId, class: className, classId, studyProgramId, password, nim, name, semester } = updateStudentDto;
+    const {
+      lecturerId,
+      class: className,
+      classId,
+      studyProgramId,
+      password,
+      nim,
+      name,
+      semester,
+    } = updateStudentDto;
 
     let finalClassId: string | null = classId ?? student.classId ?? null;
     let finalStudyProgramId = studyProgramId ?? student.studyProgramId ?? null;

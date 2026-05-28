@@ -16,7 +16,9 @@ describe('MotivationAnalysisService', () => {
       findUnique: jest.fn(),
     },
   };
-  const configMock = { get: jest.fn().mockReturnValue('http://localhost:5000') };
+  const configMock = {
+    get: jest.fn().mockReturnValue('http://localhost:5000'),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

@@ -52,14 +52,14 @@ export class UsersService {
             id: true,
             nim: true,
             classId: true,
-          }
+          },
         },
         lecturer: {
           select: {
             id: true,
             nip: true,
-          }
-        }
+          },
+        },
       },
     });
 

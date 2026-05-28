@@ -7,7 +7,11 @@ export class CreateAnalysisDto {
   @IsUUID()
   studentId!: string;
 
-  @ApiProperty({ example: 'Sesi hari Senin', description: 'Deskripsi tambahan atau catatan harian', required: false })
+  @ApiProperty({
+    example: 'Sesi hari Senin',
+    description: 'Deskripsi tambahan atau catatan harian',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   description?: string;

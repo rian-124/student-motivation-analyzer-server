@@ -1,21 +1,31 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateLecturerDto } from './dto/create-lecturer.dto';
 import { UpdateLecturerDto } from './dto/update-lecturer.dto';
 import { PrismaService } from '../../database/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
+import { LecturerResponse, LecturerWithRelations } from './types';
 
 @Injectable()
 export class LecturersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createLecturerDto: CreateLecturerDto) {
-    const { email, password, nip, name, classIds, studyProgramId } = createLecturerDto;
+    const { email, password, nip, name, classIds, studyProgramId } =
+      createLecturerDto;
 
-    const existingEmail = await this.prisma.user.findUnique({ where: { email } });
+    const existingEmail = await this.prisma.user.findUnique({
+      where: { email },
+    });
     if (existingEmail) throw new ConflictException('Email sudah terdaftar');
 
-    const existingNip = await this.prisma.lecturer.findUnique({ where: { nip } });
+    const existingNip = await this.prisma.lecturer.findUnique({
+      where: { nip },
+    });
     if (existingNip) throw new ConflictException('NIP sudah terdaftar');
 
     const selectedClasses = classIds?.length
@@ -25,7 +35,8 @@ export class LecturersService {
         })
       : [];
 
-    const department = selectedClasses[0]?.studyProgram?.department?.name ?? null;
+    const department =
+      selectedClasses[0]?.studyProgram?.department?.name ?? null;
     const hashedPassword = await bcrypt.hash(password, 10);
 
     return this.prisma.$transaction(async (tx) => {
@@ -49,13 +60,18 @@ export class LecturersService {
         include: {
           user: { select: { email: true, role: true } },
           studyProgram: true,
-          classAssignments: { include: { class: { select: { id: true, name: true } } } },
+          classAssignments: {
+            include: { class: { select: { id: true, name: true } } },
+          },
         },
       });
 
       if (classIds?.length) {
         await tx.lecturerClassAssignment.createMany({
-          data: classIds.map((classId) => ({ lecturerId: lecturer.id, classId })),
+          data: classIds.map((classId) => ({
+            lecturerId: lecturer.id,
+            classId,
+          })),
           skipDuplicates: true,
         });
 
@@ -79,7 +95,9 @@ export class LecturersService {
         include: {
           user: { select: { email: true, role: true } },
           studyProgram: true,
-          classAssignments: { include: { class: { select: { id: true, name: true } } } },
+          classAssignments: {
+            include: { class: { select: { id: true, name: true } } },
+          },
           _count: { select: { students: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -104,7 +122,9 @@ export class LecturersService {
         user: { select: { email: true, role: true } },
         studyProgram: true,
         students: { select: { classId: true } },
-        classAssignments: { include: { class: { select: { id: true, name: true } } } },
+        classAssignments: {
+          include: { class: { select: { id: true, name: true } } },
+        },
       },
     });
 
@@ -117,7 +137,9 @@ export class LecturersService {
     const { email } = updateLecturerDto;
 
     if (email && email !== existingLecturer.user?.email) {
-      const existingEmail = await this.prisma.user.findUnique({ where: { email } });
+      const existingEmail = await this.prisma.user.findUnique({
+        where: { email },
+      });
       if (existingEmail) throw new ConflictException('Email sudah terdaftar');
     }
 
@@ -130,12 +152,15 @@ export class LecturersService {
       : [];
 
     const department = classIds
-      ? selectedClasses[0]?.studyProgram?.department?.name ?? null
+      ? (selectedClasses[0]?.studyProgram?.department?.name ?? null)
       : undefined;
 
     return this.prisma.$transaction(async (tx) => {
       if (updateLecturerDto.password) {
-        const hashedPassword = await bcrypt.hash(updateLecturerDto.password, 10);
+        const hashedPassword = await bcrypt.hash(
+          updateLecturerDto.password,
+          10,
+        );
         await tx.user.update({
           where: { id: existingLecturer.userId },
           data: { password: hashedPassword },
@@ -160,12 +185,16 @@ export class LecturersService {
         include: {
           user: { select: { email: true, role: true } },
           studyProgram: true,
-          classAssignments: { include: { class: { select: { id: true, name: true } } } },
+          classAssignments: {
+            include: { class: { select: { id: true, name: true } } },
+          },
         },
       });
 
       if (classIds) {
-        await tx.lecturerClassAssignment.deleteMany({ where: { lecturerId: id } });
+        await tx.lecturerClassAssignment.deleteMany({
+          where: { lecturerId: id },
+        });
 
         if (classIds.length > 0) {
           await tx.lecturerClassAssignment.createMany({
@@ -197,12 +226,16 @@ export class LecturersService {
     return { message: 'Dosen dan akun berhasil dihapus' };
   }
 
-  private mapLecturer(lecturer: any) {
+  private mapLecturer(lecturer: LecturerWithRelations): LecturerResponse {
     return {
       ...lecturer,
-      supervisedClassIds: lecturer.classAssignments?.map((assignment: any) => assignment.classId) ?? [],
+      supervisedClassIds:
+        lecturer.classAssignments?.map((assignment) => assignment.classId) ??
+        [],
       supervisedClasses:
-        lecturer.classAssignments?.map((assignment: any) => assignment.class?.name).filter(Boolean) ?? [],
+        lecturer.classAssignments
+          ?.map((assignment) => assignment.class?.name)
+          .filter(Boolean) ?? [],
     };
   }
 }

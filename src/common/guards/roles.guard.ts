@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { Request } from 'express';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { Role } from '../enums';
 
@@ -22,7 +23,10 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const { user } = context.switchToHttp().getRequest();
+    const request = context
+      .switchToHttp()
+      .getRequest<Request & { user?: { role: Role } }>();
+    const { user } = request;
 
     if (!user) {
       throw new ForbiddenException('Akses ditolak: pengguna tidak ditemukan');

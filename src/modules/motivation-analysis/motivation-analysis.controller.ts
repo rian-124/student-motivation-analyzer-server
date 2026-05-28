@@ -23,6 +23,8 @@ import { MotivationAnalysisService } from './motivation-analysis.service';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { WebResponse } from '../../common/dto/web-response.dto';
+import { buildWebResponse } from '../../common/helpers';
+import { MotivationAnalysisResponse, StudentGraphData } from './types';
 
 @ApiTags('Motivation Analysis')
 @ApiBearerAuth('JWT-auth')
@@ -53,70 +55,79 @@ export class MotivationAnalysisController {
   async uploadAndAnalyze(
     @UploadedFile() file: Express.Multer.File,
     @Body() createAnalysisDto: CreateAnalysisDto,
-  ): Promise<WebResponse<any>> {
+  ): Promise<WebResponse<MotivationAnalysisResponse | null>> {
     const result = await this.analysisService.analyzeAndSave(
       file,
       createAnalysisDto,
     );
-    return {
-      statusCode: HttpStatus.CREATED,
-      message: 'Analysis success',
-      data: result,
-    };
+    return buildWebResponse(HttpStatus.CREATED, 'Analysis success', result);
   }
 
   @Get('student/:studentId')
   @ApiOperation({ summary: 'Ambil semua riwayat analisis mahasiswa' })
-  @ApiResponse({ status: 200, description: 'Riwayat mahasiswa berhasil diambil' })
+  @ApiResponse({
+    status: 200,
+    description: 'Riwayat mahasiswa berhasil diambil',
+  })
   async getStudentHistory(
     @Param('studentId') studentId: string,
-  ): Promise<WebResponse<any[]>> {
+  ): Promise<WebResponse<MotivationAnalysisResponse[]>> {
     const result = await this.analysisService.findByStudent(studentId);
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'Get student history success',
-      data: result,
-    };
+    return buildWebResponse(
+      HttpStatus.OK,
+      'Get student history success',
+      result,
+    );
   }
 
   @Get('class/:classId')
   @ApiOperation({ summary: 'Ambil semua analisis berdasarkan kelas' })
-  @ApiResponse({ status: 200, description: 'Riwayat analisis kelas berhasil diambil' })
-  async getClassHistory(@Param('classId') classId: string) {
+  @ApiResponse({
+    status: 200,
+    description: 'Riwayat analisis kelas berhasil diambil',
+  })
+  async getClassHistory(
+    @Param('classId') classId: string,
+  ): Promise<WebResponse<MotivationAnalysisResponse[]>> {
     const result = await this.analysisService.findByClass(classId);
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'Get class analysis history success',
-      data: result,
-    };
+    return buildWebResponse(
+      HttpStatus.OK,
+      'Get class analysis history success',
+      result,
+    );
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Ambil detail hasil analisis berdasarkan ID' })
   @ApiResponse({ status: 200, description: 'Detail analisis berhasil diambil' })
-  async findOne(@Param('id') id: string): Promise<WebResponse<any>> {
+  async findOne(
+    @Param('id') id: string,
+  ): Promise<WebResponse<MotivationAnalysisResponse | null>> {
     const result = await this.analysisService.findOne(id);
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'Get analysis detail success',
-      data: result,
-    };
+    return buildWebResponse(
+      HttpStatus.OK,
+      'Get analysis detail success',
+      result,
+    );
   }
 
   @Get()
   @ApiOperation({ summary: 'Ambil semua hasil analisis (Admin/Dosen)' })
-  @ApiResponse({ status: 200, description: 'Semua data analisis berhasil diambil' })
+  @ApiResponse({
+    status: 200,
+    description: 'Semua data analisis berhasil diambil',
+  })
   async findAll(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
-  ): Promise<WebResponse<any>> {
+  ): Promise<WebResponse<MotivationAnalysisResponse[]>> {
     const result = await this.analysisService.findAll(page, limit);
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'Get all analysis success',
-      data: result.data,
-      meta: result.meta,
-    };
+    return buildWebResponse(
+      HttpStatus.OK,
+      'Get all analysis success',
+      result.data,
+      result.meta,
+    );
   }
 
   @Get('graph/student/:studentId')
@@ -124,12 +135,8 @@ export class MotivationAnalysisController {
   @ApiResponse({ status: 200, description: 'Data grafik berhasil diambil' })
   async getStudentGraph(
     @Param('studentId') studentId: string,
-  ): Promise<WebResponse<any>> {
+  ): Promise<WebResponse<StudentGraphData>> {
     const result = await this.analysisService.getStudentGraphData(studentId);
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'Get student graph success',
-      data: result,
-    };
+    return buildWebResponse(HttpStatus.OK, 'Get student graph success', result);
   }
 }

@@ -57,7 +57,9 @@ export class ClassesService {
         });
         const averageScore =
           scores.length > 0
-            ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
+            ? Math.round(
+                scores.reduce((sum, score) => sum + score, 0) / scores.length,
+              )
             : 0;
 
         return {
@@ -65,7 +67,10 @@ export class ClassesService {
           averageScore,
         };
       })
-      .sort((a, b) => b.averageScore - a.averageScore || a.name.localeCompare(b.name))
+      .sort(
+        (a, b) =>
+          b.averageScore - a.averageScore || a.name.localeCompare(b.name),
+      )
       .map((classItem, index) => ({
         ...classItem,
         rank: index + 1,

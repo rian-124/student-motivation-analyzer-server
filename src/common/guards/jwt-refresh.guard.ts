@@ -3,7 +3,11 @@ import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
 export class JwtRefreshGuard extends AuthGuard('jwt-refresh') {
-  handleRequest(err: any, user: any, info: any) {
+  handleRequest(
+    err: Error | null,
+    user: { id: string; role: string } | false,
+    _info: string | null,
+  ) {
     if (err || !user) {
       throw (
         err ||

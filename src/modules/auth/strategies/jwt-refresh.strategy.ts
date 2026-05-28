@@ -19,7 +19,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
     });
   }
 
-  async validate(req: Request, payload: JwtPayload) {
+  validate(req: Request, payload: JwtPayload) {
     const refreshToken = req.get('Authorization')?.replace('Bearer', '').trim();
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token tidak ditemukan');

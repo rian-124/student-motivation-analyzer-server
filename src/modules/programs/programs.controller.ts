@@ -1,9 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -24,7 +19,10 @@ export class ProgramsController {
 
   @Get()
   @ApiOperation({ summary: 'Ambil semua program studi' })
-  @ApiResponse({ status: 200, description: 'Daftar program studi berhasil diambil' })
+  @ApiResponse({
+    status: 200,
+    description: 'Daftar program studi berhasil diambil',
+  })
   @ApiOkResponse({ type: ProgramListResponseDto })
   findAll() {
     return this.programsService.findAll();
@@ -32,7 +30,10 @@ export class ProgramsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Ambil detail program studi' })
-  @ApiResponse({ status: 200, description: 'Detail program studi berhasil diambil' })
+  @ApiResponse({
+    status: 200,
+    description: 'Detail program studi berhasil diambil',
+  })
   @ApiOkResponse({ type: ProgramDetailDto })
   findOne(@Param('id') id: string) {
     return this.programsService.findOne(id);

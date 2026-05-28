@@ -1,9 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -53,7 +48,10 @@ export class ClassesController {
 
   @Get(':id/leaderboard')
   @ApiOperation({ summary: 'Ambil leaderboard kelas' })
-  @ApiResponse({ status: 200, description: 'Leaderboard kelas berhasil diambil' })
+  @ApiResponse({
+    status: 200,
+    description: 'Leaderboard kelas berhasil diambil',
+  })
   @ApiOkResponse({ type: ClassLeaderboardResponseDto })
   getLeaderboard(@Param('id') id: string) {
     return this.classesService.getLeaderboard(id);

@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { PaginationMeta } from '../types/pagination-meta.type';
 
 export class WebResponse<T> {
   @ApiProperty({ example: 200 })
@@ -11,8 +12,8 @@ export class WebResponse<T> {
   data?: T;
 
   @ApiProperty({ example: null, required: false })
-  meta?: any;
+  meta?: PaginationMeta;
 
   @ApiProperty({ example: null, required: false })
-  errors?: any;
+  errors?: string | string[];
 }

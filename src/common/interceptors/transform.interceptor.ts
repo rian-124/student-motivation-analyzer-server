@@ -8,27 +8,45 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { WebResponse } from '../dto/web-response.dto';
 
+type ResponseWithData<T> = {
+  message?: string;
+  data: T;
+  meta?: object;
+};
+
 @Injectable()
-export class TransformInterceptor<T>
-  implements NestInterceptor<T, WebResponse<T>>
-{
+export class TransformInterceptor<T> implements NestInterceptor<
+  T,
+  WebResponse<T>
+> {
   intercept(
     context: ExecutionContext,
     next: CallHandler,
   ): Observable<WebResponse<T>> {
-    const response = context.switchToHttp().getResponse();
+    const response = context
+      .switchToHttp()
+      .getResponse<{ statusCode: number }>();
     const statusCode = response.statusCode;
 
     return next.handle().pipe(
-      map((res) => {
-        const hasDataField = res && typeof res === 'object' && 'data' in res;
+      map((res: T | ResponseWithData<T>) => {
+        const hasDataField =
+          typeof res === 'object' && res !== null && 'data' in res;
+        const mappedMessage =
+          typeof res === 'object' && res !== null && 'message' in res
+            ? (res.message ?? 'Success')
+            : 'Success';
+        const mappedMeta =
+          typeof res === 'object' && res !== null && 'meta' in res
+            ? res.meta
+            : undefined;
 
         return {
           success: true,
           statusCode,
-          message: res?.message || 'Success',
+          message: mappedMessage,
           data: hasDataField ? res.data : res,
-          meta: res?.meta,
+          meta: mappedMeta,
         };
       }),
     );

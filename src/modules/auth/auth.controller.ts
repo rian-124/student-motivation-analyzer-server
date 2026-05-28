@@ -70,7 +70,9 @@ export class AuthController {
     description: 'Menghapus refresh token pengguna',
   })
   @ApiResponse({ status: 200, description: 'Logout berhasil' })
-  async logout(@CurrentUser() user: { id: string }): Promise<WebResponse<null>> {
+  async logout(
+    @CurrentUser() user: { id: string },
+  ): Promise<WebResponse<null>> {
     await this.authService.logout(user.id);
     return {
       statusCode: HttpStatus.OK,

@@ -21,37 +21,46 @@ export class AnalyticsService {
     const studentWhere = isLecturer ? { lecturerId } : {};
     const analysisWhere = isLecturer ? { student: { lecturerId } } : {};
 
-    const [totalStudents, veryLowMotivation, lowMotivation, averageMotivation, highMotivation, veryHighMotivation, totalClasses, totalAnalyses] = await Promise.all([
+    const [
+      totalStudents,
+      veryLowMotivation,
+      lowMotivation,
+      averageMotivation,
+      highMotivation,
+      veryHighMotivation,
+      totalClasses,
+      totalAnalyses,
+    ] = await Promise.all([
       this.prisma.student.count({ where: studentWhere }),
-      this.prisma.motivationAnalysis.count({ 
-        where: { 
+      this.prisma.motivationAnalysis.count({
+        where: {
           ...analysisWhere,
-          prediction: 'Sangat Rendah' 
-        } 
+          prediction: 'Sangat Rendah',
+        },
       }),
-      this.prisma.motivationAnalysis.count({ 
-        where: { 
+      this.prisma.motivationAnalysis.count({
+        where: {
           ...analysisWhere,
-          prediction: 'Rendah' 
-        } 
+          prediction: 'Rendah',
+        },
       }),
-      this.prisma.motivationAnalysis.count({ 
-        where: { 
+      this.prisma.motivationAnalysis.count({
+        where: {
           ...analysisWhere,
-          prediction: 'Cukup' 
-        } 
+          prediction: 'Cukup',
+        },
       }),
-      this.prisma.motivationAnalysis.count({ 
-        where: { 
+      this.prisma.motivationAnalysis.count({
+        where: {
           ...analysisWhere,
-          prediction: 'Tinggi' 
-        } 
+          prediction: 'Tinggi',
+        },
       }),
-      this.prisma.motivationAnalysis.count({ 
-        where: { 
+      this.prisma.motivationAnalysis.count({
+        where: {
           ...analysisWhere,
-          prediction: 'Sangat Tinggi' 
-        } 
+          prediction: 'Sangat Tinggi',
+        },
       }),
       isAdmin ? this.prisma.class.count() : null,
       this.prisma.motivationAnalysis.count({ where: analysisWhere }),
@@ -62,7 +71,7 @@ export class AnalyticsService {
     if (totalAnalyses > 0) {
       const result = await this.prisma.motivationAnalysis.aggregate({
         where: analysisWhere,
-        _avg: { confidence: true }
+        _avg: { confidence: true },
       });
       classAverage = Math.round((result._avg.confidence || 0) * 100);
     }
@@ -100,7 +109,7 @@ export class AnalyticsService {
       _count: true,
     });
 
-    const pieChart = distribution.map(d => ({
+    const pieChart = distribution.map((d) => ({
       name: d.prediction,
       value: d._count,
     }));
@@ -126,37 +135,45 @@ export class AnalyticsService {
         },
       });
 
-      barChart = departments.map((department) => {
-        const analyses = department.programs
-          .flatMap((program) => program.classes)
-          .flatMap((classItem) => classItem.students)
-          .flatMap((student) => student.analyses);
-        const avg = analyses.length > 0 
-          ? analyses.reduce((acc, curr) => acc + curr.confidence, 0) / analyses.length
-          : 0;
-        return {
-          label: department.name,
-          value: Math.round(avg * 100),
-        };
-      }).sort((a, b) => b.value - a.value);
+      barChart = departments
+        .map((department) => {
+          const analyses = department.programs
+            .flatMap((program) => program.classes)
+            .flatMap((classItem) => classItem.students)
+            .flatMap((student) => student.analyses);
+          const avg =
+            analyses.length > 0
+              ? analyses.reduce((acc, curr) => acc + curr.confidence, 0) /
+                analyses.length
+              : 0;
+          return {
+            label: department.name,
+            value: Math.round(avg * 100),
+          };
+        })
+        .sort((a, b) => b.value - a.value);
     } else {
       const analyses = await this.prisma.motivationAnalysis.findMany({
         where: analysisWhere,
         select: { createdAt: true, confidence: true },
-        orderBy: { createdAt: 'asc' }
+        orderBy: { createdAt: 'asc' },
       });
 
       const weeks: Record<string, number[]> = {};
-      analyses.forEach(a => {
+      analyses.forEach((a) => {
         const week = `M${Math.ceil(a.createdAt.getDate() / 7)}`;
         if (!weeks[week]) weeks[week] = [];
         weeks[week].push(a.confidence);
       });
 
-      barChart = Object.keys(weeks).map(w => ({
-        label: w,
-        value: Math.round((weeks[w].reduce((a, b) => a + b, 0) / weeks[w].length) * 100)
-      })).slice(-8);
+      barChart = Object.keys(weeks)
+        .map((w) => ({
+          label: w,
+          value: Math.round(
+            (weeks[w].reduce((a, b) => a + b, 0) / weeks[w].length) * 100,
+          ),
+        }))
+        .slice(-8);
     }
 
     return {
