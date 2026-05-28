@@ -104,6 +104,73 @@ export class AnalyticsService {
     };
   }
 
+  async getPublicProgramStats() {
+    const analyses = await this.prisma.motivationAnalysis.findMany({
+      select: {
+        confidence: true,
+        weightedScore: true,
+        studentId: true,
+        student: {
+          select: {
+            studyProgram: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const programGroups: Record<
+      string,
+      {
+        programName: string;
+        scores: number[];
+        weightedScores: number[];
+        studentIds: Set<string>;
+      }
+    > = {};
+
+    for (const a of analyses) {
+      const program = a.student?.studyProgram;
+      if (!program) continue;
+      if (!programGroups[program.id]) {
+        programGroups[program.id] = {
+          programName: program.name,
+          scores: [],
+          weightedScores: [],
+          studentIds: new Set(),
+        };
+      }
+      programGroups[program.id].scores.push(a.confidence);
+      if (a.weightedScore != null) {
+        programGroups[program.id].weightedScores.push(a.weightedScore);
+      }
+      programGroups[program.id].studentIds.add(a.studentId);
+    }
+
+    return Object.values(programGroups)
+      .map(({ programName, scores, weightedScores, studentIds }) => ({
+        programName,
+        avgScore:
+          weightedScores.length > 0
+            ? Math.round(
+                weightedScores.reduce((a, b) => a + b, 0) /
+                  weightedScores.length,
+              )
+            : scores.length > 0
+              ? Math.round(
+                  (scores.reduce((a, b) => a + b, 0) / scores.length) * 100,
+                )
+              : 0,
+        totalStudents: studentIds.size,
+        totalAnalyses: scores.length,
+      }))
+      .sort((a, b) => b.avgScore - a.avgScore);
+  }
+
   async getCharts(userId: string, role: Role) {
     const isAdmin = role === Role.admin;
     const isLecturer = role === Role.lecturer;
