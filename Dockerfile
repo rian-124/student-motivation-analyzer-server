@@ -39,14 +39,14 @@ RUN npm install --omit=dev
 
 # Copy Prisma schema and generated client from builder
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
 
 # Expose port
-EXPOSE 3000
+EXPOSE 3001
 
 # Start the application using migrate deploy to ensure DB is up-to-date
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
