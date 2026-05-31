@@ -51,4 +51,4 @@ ENV PORT=7860
 EXPOSE 7860
 
 # Start the application using migrate deploy to ensure DB is up-to-date
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && ls -la dist/ && node dist/main"]
