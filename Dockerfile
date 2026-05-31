@@ -37,8 +37,9 @@ COPY package*.json ./
 # Install only production dependencies
 RUN npm install --omit=dev --ignore-scripts
 
-# Copy Prisma schema and generated client from builder
+# Copy Prisma schema, config, and generated client from builder
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
