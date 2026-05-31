@@ -45,8 +45,9 @@ COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
 
-# Expose port
-EXPOSE 3001
+# Hugging Face Spaces expects port 7860
+ENV PORT=7860
+EXPOSE 7860
 
 # Start the application using migrate deploy to ensure DB is up-to-date
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
